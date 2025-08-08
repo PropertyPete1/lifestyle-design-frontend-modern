@@ -444,6 +444,18 @@
           <div class="activity-item"><div class="activity-dot"></div><div class="activity-content"><div class="activity-title">Engagement goal achieved</div><div class="activity-time">6 hours ago</div></div></div>
         </div>
       </div>
+
+      <!-- Queue Preview Panel -->
+      <div class="chart-container" style="margin-top: 2rem;">
+        <div class="chart-header">
+          <h2 class="chart-title">Scheduled Queue</h2>
+          <div class="chart-controls">
+            <button class="control-btn" onclick="loadQueuePreview()">Refresh</button>
+          </div>
+        </div>
+        <div id="queuePanel" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;"></div>
+        <div style="text-align:center; margin-top: 1rem; color: rgba(255,255,255,0.5); font-size: 0.85rem;">Showing latest scheduled items</div>
+      </div>
     </div>
 
     <div id="youtube-data" class="platform-data">
@@ -717,7 +729,7 @@
           case 'autopilot':
             startAutopilotRun();
             break;
-          case 'manual': showNotification('✍ Manual Post editor opening...'); break;
+          case 'manual': handlePostNow(); break;
           case 'cartoons': showNotification('🎬 Cartoon generator loading...'); break;
           case 'settings':
             openSettingsModal();
@@ -910,9 +922,10 @@
         document.querySelectorAll('.control-btn').forEach(btn => { btn.addEventListener('click', function() { this.parentNode.querySelectorAll('.control-btn').forEach(s => s.classList.remove('active')); this.classList.add('active'); showNotification('📊 Chart period changed to ' + this.textContent); }); });
         document.querySelectorAll('.metric-card').forEach(card => { card.addEventListener('click', function() { const titleEl = this.querySelector('.metric-title'); const title = titleEl ? titleEl.textContent : 'Metric'; showNotification('📈 ' + title + ' details coming soon!'); }); });
         document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && menuOpen) toggleMenu(); if (e.key === '1' && e.ctrlKey) { e.preventDefault(); switchPlatform('instagram'); } if (e.key === '2' && e.ctrlKey) { e.preventDefault(); switchPlatform('youtube'); } if (e.key === 'u' && e.ctrlKey) { e.preventDefault(); handleMenuClick('upload'); } });
-        // Initial backend status + analytics
+        // Initial backend status + analytics + queue
         await refreshAutopilotStatus();
         await fetchAnalyticsAndRender();
+        await loadQueuePreview();
         showNotification('🎉 Luxury Dashboard loaded successfully!');
       } catch (error) { console.error('Error initializing dashboard:', error); showNotification('❌ Error loading dashboard', 'error'); }
     });
@@ -947,25 +960,30 @@
 
         // Fallback to v2 routes if available
         if (!data) {
-          const [ig, yt] = await Promise.allSettled([
-            fetch(BACKEND_URL + '/api/instagram/analytics').then(r => r.ok ? r.json() : null),
-            fetch(BACKEND_URL + '/api/youtube/analytics').then(r => r.ok ? r.json() : null)
-          ]);
-          data = {
-            instagram: ig.value?.analytics || {},
-            youtube: yt.value?.analytics || {}
-          };
+          // Try combined dashboard endpoint first
+          try {
+            const d = await fetch(BACKEND_URL + '/api/dashboard/analytics');
+            if (d.ok) data = await d.json();
+          } catch {}
+          if (!data) {
+            const [ig, yt] = await Promise.allSettled([
+              fetch(BACKEND_URL + '/api/instagram/analytics').then(r => r.ok ? r.json() : null),
+              fetch(BACKEND_URL + '/api/youtube/analytics').then(r => r.ok ? r.json() : null)
+            ]);
+            data = {
+              instagram: ig.value?.analytics || {},
+              youtube: yt.value?.analytics || {}
+            };
+          }
         }
 
         // Update a few metrics if present
         const setText = (selector, val) => { const el = document.querySelector(selector); if (el && val != null) el.textContent = String(val); };
-        if (data?.instagram) {
-          // Example mapping if backend returns numeric fields
-          // setText('.metric-card:nth-child(1) .metric-value', data.instagram.followers)
-        }
-        if (data?.youtube) {
-          // setText('#youtube-data .metric-card:nth-child(1) .metric-value', data.youtube.subscribers)
-        }
+        // Optionally map growth rates if present
+        const igGrowth = data?.instagram?.growthRate ?? data?.instagram?.growth_rate;
+        const ytGrowth = data?.youtube?.growthRate ?? data?.youtube?.growth_rate;
+        if (typeof igGrowth === 'number') setText('#instagram-data .metric-card:nth-child(2) .metric-change', `↗ ${igGrowth}% growth`);
+        if (typeof ytGrowth === 'number') setText('#youtube-data .metric-card:nth-child(2) .metric-change', `↗ ${ytGrowth}% growth`);
       } catch (e) {
         console.warn('Analytics fetch failed');
       }
@@ -976,8 +994,47 @@
         if (!r.ok) return;
         const q = await r.json();
         const count = q.total || q.totalCount || (q.queue ? q.queue.length : 0) || 0;
+        const list = Array.isArray(q.queue) ? q.queue : [];
+        const panel = document.getElementById('queuePanel');
+        if (panel) {
+          panel.innerHTML = '';
+          if (!list.length) {
+            const empty = document.createElement('div');
+            empty.style.cssText = 'opacity:0.7;text-align:center;padding:1rem;border:1px dashed rgba(255,255,255,0.15);border-radius:12px;';
+            empty.textContent = 'No scheduled items';
+            panel.appendChild(empty);
+          } else {
+            list.slice(0, 12).forEach(item => {
+              const card = document.createElement('div');
+              card.className = 'video-result-card';
+              const localTime = item.scheduledTimeLocal || formatChicagoTime(item.scheduledTime);
+              card.innerHTML = `
+                <div class="video-thumbnail" style="height:90px;">
+                  <span class="platform-badge">${item.platform === 'youtube' ? '▶️' : '📷'}</span>
+                  <div class="video-stats">
+                    <span class="stat">${(item.status || 'scheduled').toUpperCase()}</span>
+                  </div>
+                </div>
+                <div class="video-info">
+                  <h4 class="video-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${(item.caption || '').slice(0, 60)}</h4>
+                  <p class="video-desc">When: ${localTime || '—'}</p>
+                </div>`;
+              panel.appendChild(card);
+            });
+          }
+        }
         showNotification(`🗓️ Queue updated: ${count} scheduled items`);
       } catch {}
+    }
+    function formatChicagoTime(utcIso) {
+      if (!utcIso) return '';
+      try {
+        const dt = new Date(utcIso);
+        return new Intl.DateTimeFormat('en-US', {
+          timeZone: 'America/Chicago',
+          year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit'
+        }).format(dt);
+      } catch { return ''; }
     }
     function openUploadPicker() {
       try {
