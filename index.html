@@ -1045,10 +1045,51 @@
         input.onchange = () => {
           const files = Array.from(input.files || []);
           if (!files.length) return;
-          showNotification(`📤 Selected ${files.length} file(s). Upload via pre-signed URLs coming next.`);
+          showNotification(`📤 Selected ${files.length} file(s). Starting upload...`);
+          handleFileUpload(files);
         };
         input.click();
       } catch (e) { console.error('Upload picker error', e); }
+    }
+
+    async function handleFileUpload(files) {
+      for (const file of files) {
+        try {
+          // Try presigned upload flow
+          const presigned = await getPresignedUrl(file.name, file.type).catch(() => null);
+          if (presigned?.url) {
+            const put = await fetch(presigned.url, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
+            if (!put.ok) throw new Error('S3 PUT failed');
+            showNotification(`✅ Uploaded: ${file.name}`);
+            // Optionally notify backend about new asset (if endpoint exists later)
+            continue;
+          }
+
+          // Fallback: upload via backend if endpoint exists
+          const fd = new FormData();
+          fd.append('file', file);
+          const up = await fetch(BACKEND_URL + '/api/uploads', { method: 'POST', body: fd });
+          if (up.ok) {
+            showNotification(`✅ Uploaded via backend: ${file.name}`);
+          } else {
+            throw new Error('Backend upload not available');
+          }
+        } catch (err) {
+          console.error('Upload error:', err);
+          showNotification(`❌ Upload failed: ${file.name}`, 'error');
+        }
+      }
+      // After uploads, refresh queue (if backend auto-queues uploads)
+      setTimeout(loadQueuePreview, 1500);
+    }
+
+    async function getPresignedUrl(fileName, contentType) {
+      try {
+        const q = new URLSearchParams({ fileName, contentType });
+        const r = await fetch(BACKEND_URL + '/api/uploads/presign?' + q.toString());
+        if (!r.ok) return null;
+        return await r.json();
+      } catch { return null; }
     }
 
     window.addEventListener('resize', function() { try { if (window.innerWidth <= 768 && menuOpen) toggleMenu(); } catch (error) { console.error('Error handling resize:', error); } });
