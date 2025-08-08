@@ -571,6 +571,94 @@
     </div>
   </div>
 
+  <!-- Settings Modal -->
+  <div class="scrape-modal" id="settingsModal">
+    <div class="scrape-container">
+      <div class="scrape-header">
+        <h1 class="scrape-title">⚙ Settings</h1>
+        <button class="close-scrape-btn" onclick="closeSettingsModal()"><span>✕</span></button>
+      </div>
+      <div class="scrape-content">
+        <div class="scrape-section">
+          <h2 class="section-title">Instagram</h2>
+          <div class="settings-grid">
+            <div class="setting-item">
+              <label>Instagram Token</label>
+              <input id="set_instagramToken" class="scrape-input" placeholder="EAAG..." />
+              <span class="setting-hint">Long-lived access token</span>
+            </div>
+            <div class="setting-item">
+              <label>Instagram Business ID</label>
+              <input id="set_igBusinessId" class="scrape-input" placeholder="1784..." />
+            </div>
+          </div>
+        </div>
+        <div class="scrape-section">
+          <h2 class="section-title">YouTube</h2>
+          <div class="settings-grid">
+            <div class="setting-item">
+              <label>Channel ID</label>
+              <input id="set_youtubeChannelId" class="scrape-input" placeholder="UC..." />
+            </div>
+            <div class="setting-item">
+              <label>Client ID</label>
+              <input id="set_youtubeClientId" class="scrape-input" />
+            </div>
+            <div class="setting-item">
+              <label>Client Secret</label>
+              <input id="set_youtubeClientSecret" class="scrape-input" />
+            </div>
+            <div class="setting-item">
+              <label>Refresh Token</label>
+              <input id="set_youtubeRefreshToken" class="scrape-input" />
+            </div>
+          </div>
+        </div>
+        <div class="scrape-section">
+          <h2 class="section-title">AWS S3</h2>
+          <div class="settings-grid">
+            <div class="setting-item">
+              <label>Access Key</label>
+              <input id="set_s3AccessKey" class="scrape-input" />
+            </div>
+            <div class="setting-item">
+              <label>Secret Key</label>
+              <input id="set_s3SecretKey" class="scrape-input" />
+            </div>
+            <div class="setting-item">
+              <label>Bucket</label>
+              <input id="set_s3BucketName" class="scrape-input" />
+            </div>
+            <div class="setting-item">
+              <label>Region</label>
+              <input id="set_s3Region" class="scrape-input" placeholder="us-east-1" />
+            </div>
+          </div>
+        </div>
+        <div class="scrape-section">
+          <h2 class="section-title">Other</h2>
+          <div class="settings-grid">
+            <div class="setting-item">
+              <label>OpenAI API Key</label>
+              <input id="set_openaiApiKey" class="scrape-input" placeholder="sk-..." />
+            </div>
+            <div class="setting-item">
+              <label>Enable AutoPilot</label>
+              <select id="set_autopilotEnabled" class="scrape-select">
+                <option value="true">Enabled</option>
+                <option value="false">Disabled</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="scrape-actions">
+          <button class="scrape-btn preview-btn" onclick="loadSettings()">↻ Load</button>
+          <button class="scrape-btn start-btn" onclick="saveSettings()"><span class="btn-icon">💾</span><span>Save</span><div class="btn-glow"></div></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script type="module">
     let currentPlatform = 'instagram';
     const BACKEND_URL = (typeof import !== 'undefined' && typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL) || 'https://lifestyle-design-backend-v2-clean.onrender.com';
@@ -631,7 +719,9 @@
             break;
           case 'manual': showNotification('✍ Manual Post editor opening...'); break;
           case 'cartoons': showNotification('🎬 Cartoon generator loading...'); break;
-          case 'settings': showNotification('⚙ Settings panel opening...'); break;
+          case 'settings':
+            openSettingsModal();
+            break;
           default: showNotification('🔧 Feature coming soon!');
         }
       } catch (error) { console.error('Error handling menu click:', error); }
@@ -655,6 +745,74 @@
 
     function openScrapeModal() {
       try { const modal = document.getElementById('scrapeModal'); modal.style.display = 'flex'; setTimeout(() => modal.classList.add('show'), 10); document.body.style.overflow = 'hidden'; showNotification('🕷️ Scrape Dashboard opened'); } catch (error) { console.error('Error opening scrape modal:', error); }
+    }
+
+    function openSettingsModal() {
+      try {
+        const modal = document.getElementById('settingsModal');
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('show'), 10);
+        document.body.style.overflow = 'hidden';
+        loadSettings();
+      } catch (error) { console.error('Error opening settings modal:', error); }
+    }
+    function closeSettingsModal() {
+      try {
+        const modal = document.getElementById('settingsModal');
+        modal.classList.remove('show');
+        setTimeout(() => { modal.style.display = 'none'; document.body.style.overflow = ''; }, 400);
+      } catch (error) { console.error('Error closing settings modal:', error); }
+    }
+
+    async function loadSettings() {
+      try {
+        const resp = await fetch(BACKEND_URL + '/api/settings');
+        if (!resp.ok) throw new Error('Settings load failed');
+        const s = await resp.json();
+        const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
+        set('set_instagramToken', s.instagramToken);
+        set('set_igBusinessId', s.igBusinessId);
+        set('set_youtubeChannelId', s.youtubeChannelId);
+        set('set_youtubeClientId', s.youtubeClientId);
+        set('set_youtubeClientSecret', s.youtubeClientSecret);
+        set('set_youtubeRefreshToken', s.youtubeRefreshToken);
+        set('set_s3AccessKey', s.s3AccessKey);
+        set('set_s3SecretKey', s.s3SecretKey);
+        set('set_s3BucketName', s.s3BucketName);
+        set('set_s3Region', s.s3Region);
+        set('set_openaiApiKey', s.openaiApiKey);
+        const ae = document.getElementById('set_autopilotEnabled'); if (ae) ae.value = String(!!s.autopilotEnabled);
+        showNotification('📋 Settings loaded');
+      } catch (e) {
+        console.error('Settings load error', e);
+        showNotification('❌ Failed to load settings', 'error');
+      }
+    }
+
+    async function saveSettings() {
+      try {
+        const get = id => /** @type {HTMLInputElement} */(document.getElementById(id))?.value || '';
+        const payload = {
+          instagramToken: get('set_instagramToken'),
+          igBusinessId: get('set_igBusinessId'),
+          youtubeChannelId: get('set_youtubeChannelId'),
+          youtubeClientId: get('set_youtubeClientId'),
+          youtubeClientSecret: get('set_youtubeClientSecret'),
+          youtubeRefreshToken: get('set_youtubeRefreshToken'),
+          s3AccessKey: get('set_s3AccessKey'),
+          s3SecretKey: get('set_s3SecretKey'),
+          s3BucketName: get('set_s3BucketName'),
+          s3Region: get('set_s3Region'),
+          openaiApiKey: get('set_openaiApiKey'),
+          autopilotEnabled: (document.getElementById('set_autopilotEnabled')?.value === 'true')
+        };
+        const resp = await fetch(BACKEND_URL + '/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if (!resp.ok) throw new Error('Settings save failed');
+        showNotification('✅ Settings saved');
+      } catch (e) {
+        console.error('Settings save error', e);
+        showNotification('❌ Failed to save settings', 'error');
+      }
     }
     function closeScrapeModal() {
       try { const modal = document.getElementById('scrapeModal'); modal.classList.remove('show'); setTimeout(() => { modal.style.display = 'none'; document.body.style.overflow = ''; }, 400); showNotification('📱 Returned to dashboard'); } catch (error) { console.error('Error closing scrape modal:', error); }
@@ -748,28 +906,66 @@
         document.querySelectorAll('.control-btn').forEach(btn => { btn.addEventListener('click', function() { this.parentNode.querySelectorAll('.control-btn').forEach(s => s.classList.remove('active')); this.classList.add('active'); showNotification('📊 Chart period changed to ' + this.textContent); }); });
         document.querySelectorAll('.metric-card').forEach(card => { card.addEventListener('click', function() { const titleEl = this.querySelector('.metric-title'); const title = titleEl ? titleEl.textContent : 'Metric'; showNotification('📈 ' + title + ' details coming soon!'); }); });
         document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && menuOpen) toggleMenu(); if (e.key === '1' && e.ctrlKey) { e.preventDefault(); switchPlatform('instagram'); } if (e.key === '2' && e.ctrlKey) { e.preventDefault(); switchPlatform('youtube'); } if (e.key === 'u' && e.ctrlKey) { e.preventDefault(); handleMenuClick('upload'); } });
-        // Initial backend status fetch
-        try {
-          const statusResp = await fetch(BACKEND_URL + '/api/autopilot/status');
-          if (statusResp.ok) {
-            const status = await statusResp.json();
-            const statusEls = document.querySelectorAll('.auto-post-status');
-            statusEls.forEach(el => {
-              if (status.autopilotEnabled) {
-                el.classList.remove('inactive');
-                el.innerHTML = '<div class="status-indicator"></div>Active';
-              } else {
-                el.classList.add('inactive');
-                el.innerHTML = '<div class="status-indicator"></div>Inactive';
-              }
-            });
-          }
-        } catch (e) {
-          console.warn('Failed to fetch autopilot status');
-        }
+        // Initial backend status + analytics
+        await refreshAutopilotStatus();
+        await fetchAnalyticsAndRender();
         showNotification('🎉 Luxury Dashboard loaded successfully!');
       } catch (error) { console.error('Error initializing dashboard:', error); showNotification('❌ Error loading dashboard', 'error'); }
     });
+
+    async function refreshAutopilotStatus() {
+      try {
+        const statusResp = await fetch(BACKEND_URL + '/api/autopilot/status');
+        if (statusResp.ok) {
+          const status = await statusResp.json();
+          const statusEls = document.querySelectorAll('.auto-post-status');
+          statusEls.forEach(el => {
+            if (status.autopilotEnabled) {
+              el.classList.remove('inactive');
+              el.innerHTML = '<div class="status-indicator"></div>Active';
+            } else {
+              el.classList.add('inactive');
+              el.innerHTML = '<div class="status-indicator"></div>Inactive';
+            }
+          });
+        }
+      } catch {}
+    }
+
+    async function fetchAnalyticsAndRender() {
+      try {
+        // Try clean backend unified analytics
+        let data = null;
+        try {
+          const r = await fetch(BACKEND_URL + '/api/analytics');
+          if (r.ok) data = await r.json();
+        } catch {}
+
+        // Fallback to v2 routes if available
+        if (!data) {
+          const [ig, yt] = await Promise.allSettled([
+            fetch(BACKEND_URL + '/api/instagram/analytics').then(r => r.ok ? r.json() : null),
+            fetch(BACKEND_URL + '/api/youtube/analytics').then(r => r.ok ? r.json() : null)
+          ]);
+          data = {
+            instagram: ig.value?.analytics || {},
+            youtube: yt.value?.analytics || {}
+          };
+        }
+
+        // Update a few metrics if present
+        const setText = (selector, val) => { const el = document.querySelector(selector); if (el && val != null) el.textContent = String(val); };
+        if (data?.instagram) {
+          // Example mapping if backend returns numeric fields
+          // setText('.metric-card:nth-child(1) .metric-value', data.instagram.followers)
+        }
+        if (data?.youtube) {
+          // setText('#youtube-data .metric-card:nth-child(1) .metric-value', data.youtube.subscribers)
+        }
+      } catch (e) {
+        console.warn('Analytics fetch failed');
+      }
+    }
 
     window.addEventListener('resize', function() { try { if (window.innerWidth <= 768 && menuOpen) toggleMenu(); } catch (error) { console.error('Error handling resize:', error); } });
     document.addEventListener('contextmenu', function(e) { if (e.target.closest('.platform-btn') || e.target.closest('.menu-btn')) e.preventDefault(); });
