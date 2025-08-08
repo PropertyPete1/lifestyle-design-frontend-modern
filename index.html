@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Social Media Analytics Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: radial-gradient(ellipse at top, #0c1419 0%, #050912 50%, #000205 100%);
+      color: #ffffff;
+      overflow-x: hidden;
+      min-height: 100vh;
+      position: relative;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(147, 51, 234, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 40% 60%, rgba(236, 72, 153, 0.03) 0%, transparent 50%);
+      pointer-events: none; z-index: -1;
+    }
+
+    .dashboard-container { padding: 2rem; max-width: 1400px; margin: 0 auto; position: relative; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; padding: 2rem 0; border-bottom: 1px solid rgba(59, 130, 246, 0.1); position: relative; }
+    .header::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 1px; background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.4), transparent); animation: shimmer 3s ease-in-out infinite; }
+    @keyframes shimmer { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+    .logo { font-size: 2.2rem; font-weight: 700; background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; position: absolute; left: 50%; transform: translateX(-50%); letter-spacing: -0.02em; text-shadow: 0 0 30px rgba(96, 165, 250, 0.3); }
+    .platform-switcher { display: flex; gap: 1rem; align-items: center; }
+    .platform-btn { padding: 1rem 2rem; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(20px); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 12px; color: rgba(255, 255, 255, 0.8); cursor: pointer; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; gap: 0.75rem; font-weight: 500; font-size: 1rem; position: relative; overflow: hidden; }
+    .platform-btn::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent); transition: left 0.5s; }
+    .platform-btn:hover::before { left: 100%; }
+    .platform-btn.active { background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.5); color: #60a5fa; transform: translateY(-2px); box-shadow: 0 10px 30px rgba(59, 130, 246, 0.2), 0 0 0 1px rgba(59, 130, 246, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+    .platform-btn.youtube.active { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.5); color: #f87171; box-shadow: 0 10px 30px rgba(239, 68, 68, 0.2), 0 0 0 1px rgba(239, 68, 68, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+    .header-right { display: flex; align-items: center; gap: 1rem; }
+    .menu-container { position: relative; }
+    .menu-btn { width: 48px; height: 48px; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(20px); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); font-size: 1.2rem; color: rgba(255, 255, 255, 0.8); position: relative; overflow: hidden; }
+    .menu-btn::before { content: ''; position: absolute; top: 50%; left: 50%; width: 0; height: 0; background: radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%); transition: all 0.3s ease; border-radius: 50%; transform: translate(-50%, -50%); }
+    .menu-btn:hover::before { width: 100px; height: 100px; }
+    .menu-btn:hover { border-color: rgba(59, 130, 246, 0.5); transform: translateY(-2px); box-shadow: 0 10px 30px rgba(59, 130, 246, 0.2); }
+    .menu-btn.active { background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.5); color: #60a5fa; box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3); }
+    .menu-icon { display: inline-block; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); position: relative; z-index: 1; }
+    .menu-btn.active .menu-icon { transform: rotate(90deg); }
+    .dropdown-menu { position: absolute; top: calc(100% + 15px); right: 0; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(30px); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 16px; padding: 0.75rem 0; min-width: 220px; opacity: 0; visibility: hidden; transform: translateY(-10px) scale(0.95); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1000; box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(59,130,246,0.1), inset 0 1px 0 rgba(255,255,255,0.05); }
+    .dropdown-menu.show { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
+    .menu-item { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.5rem; color: rgba(255, 255, 255, 0.8); text-decoration: none; transition: all 0.3s ease; cursor: pointer; font-weight: 500; position: relative; }
+    .menu-item::before { content: ''; position: absolute; left: 0; top: 0; width: 2px; height: 100%; background: linear-gradient(135deg, #60a5fa, #a78bfa); transform: scaleY(0); transition: transform 0.3s ease; }
+    .menu-item:hover::before { transform: scaleY(1); }
+    .menu-item:hover { background: rgba(59, 130, 246, 0.1); color: #60a5fa; padding-left: 2rem; }
+    .menu-item-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #60a5fa, #a78bfa); border-radius: 8px; font-size: 0.9rem; flex-shrink: 0; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+
+    .post-now-btn { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #ec4899, #f472b6); border: none; border-radius: 12px; color: white; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden; box-shadow: 0 8px 25px rgba(236, 72, 153, 0.4), 0 0 0 1px rgba(255,255,255,0.1), inset 0 1px 0 rgba(255,255,255,0.2); }
+    .post-now-btn:hover { transform: translateY(-3px) scale(1.02); background: linear-gradient(135deg, #db2777, #ec4899); box-shadow: 0 15px 35px rgba(236, 72, 153, 0.6), 0 0 0 1px rgba(255,255,255,0.2), inset 0 1px 0 rgba(255,255,255,0.3); }
+    .post-now-btn:active { transform: translateY(-1px) scale(0.98); }
+    .post-icon { font-size: 1.1rem; animation: electric-pulse 2s ease-in-out infinite; }
+    .post-glow { position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); transition: left 0.6s; }
+    .post-now-btn:hover .post-glow { left: 100%; }
+    @keyframes electric-pulse { 0%,100%{ transform: scale(1); filter: drop-shadow(0 0 5px currentColor);} 50%{ transform: scale(1.1); filter: drop-shadow(0 0 15px currentColor);} }
+    .platform-youtube .post-now-btn { background: linear-gradient(135deg, #dc2626, #ef4444); box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4), 0 0 0 1px rgba(255,255,255,0.1), inset 0 1px 0 rgba(255,255,255,0.2); }
+    .platform-youtube .post-now-btn:hover { background: linear-gradient(135deg, #b91c1c, #dc2626); box-shadow: 0 15px 35px rgba(220, 38, 38, 0.6), 0 0 0 1px rgba(255,255,255,0.2), inset 0 1px 0 rgba(255,255,255,0.3); }
+
+    .user-profile { display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1.25rem; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(20px); border-radius: 25px; border: 1px solid rgba(59, 130, 246, 0.2); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+    .user-profile:hover { background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.4); transform: translateY(-2px); box-shadow: 0 10px 30px rgba(59, 130, 246, 0.2); }
+    .avatar { width: 40px; height: 40px; background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 1rem; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem; }
+    .metric-card { background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(20px); border-radius: 20px; padding: 2.5rem; border: 1px solid rgba(59, 130, 246, 0.15); position: relative; overflow: hidden; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; box-shadow: 0 10px 30px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05); }
+    .metric-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, #60a5fa, #a78bfa, #f472b6); opacity: 0; transition: opacity 0.4s ease; }
+    .metric-card.youtube::before { background: linear-gradient(90deg, #ef4444, #f87171, #fca5a5); }
+    .metric-card:hover { transform: translateY(-8px); background: rgba(15, 23, 42, 0.6); border-color: rgba(59, 130, 246, 0.3); box-shadow: 0 20px 50px rgba(0,0,0,0.3), 0 0 0 1px rgba(59,130,246,0.2), inset 0 1px 0 rgba(255,255,255,0.1); }
+    .metric-card:hover::before { opacity: 1; }
+    .metric-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .metric-title { color: rgba(255,255,255,0.6); font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 2px; }
+    .metric-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; background: linear-gradient(135deg, #60a5fa, #a78bfa); box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255,255,255,0.2); transition: transform 0.3s ease; }
+    .metric-card:hover .metric-icon { transform: scale(1.1) rotate(5deg); }
+    .metric-icon.youtube { background: linear-gradient(135deg, #ef4444, #f87171); box-shadow: 0 8px 24px rgba(239,68,68,0.3), inset 0 1px 0 rgba(255,255,255,0.2); }
+    .metric-value { font-size: 3rem; font-weight: 700; margin-bottom: 1rem; background: linear-gradient(135deg, #ffffff, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.02em; text-shadow: 0 0 30px rgba(96, 165, 250, 0.3); }
+    .metric-value.youtube { background: linear-gradient(135deg, #ffffff, #ef4444, #f87171); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .metric-change { display: flex; align-items: center; gap: 0.75rem; font-size: 0.95rem; font-weight: 500; }
+    .change-positive { color: #34d399; text-shadow: 0 0 10px rgba(52, 211, 153, 0.5); }
+    .change-negative { color: #f87171; text-shadow: 0 0 10px rgba(248, 113, 113, 0.5); }
+
+    .chart-container { background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(20px); border-radius: 20px; padding: 2.5rem; border: 1px solid rgba(59, 130, 246, 0.15); margin-bottom: 2rem; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05); }
+    .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .chart-title { font-size: 1.6rem; font-weight: 600; background: linear-gradient(135deg, #ffffff, #60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .chart-controls { display: flex; gap: 0.75rem; }
+    .control-btn { padding: 0.75rem 1.25rem; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 10px; color: rgba(255, 255, 255, 0.7); cursor: pointer; transition: all 0.3s ease; font-weight: 500; font-size: 0.9rem; }
+    .control-btn.active { background: linear-gradient(135deg, #60a5fa, #a78bfa); border-color: transparent; color: #ffffff; box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
+    .control-btn.youtube.active { background: linear-gradient(135deg, #ef4444, #f87171); box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4); }
+    .control-btn:hover { background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); color: #60a5fa; }
+    .chart-placeholder { height: 320px; background: radial-gradient(circle at 20% 20%, rgba(59,130,246,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(236,72,153,0.15) 0%, transparent 50%), linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.6)); border-radius: 16px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; border: 1px solid rgba(59, 130, 246, 0.3); box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 0 50px rgba(59,130,246,0.2); }
+    .chart-placeholder.youtube { background: radial-gradient(circle at 20% 20%, rgba(239, 68, 68, 0.15) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(248, 113, 113, 0.15) 0%, transparent 50%), linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.6)); border-color: rgba(239, 68, 68, 0.3); box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 0 50px rgba(239,68,68,0.2); }
+    .chart-line { position: absolute; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, #ec4899, #f472b6, transparent); animation: holographic-sweep 3s ease-in-out infinite; box-shadow: 0 0 30px rgba(236, 72, 153, 0.8), 0 0 60px rgba(244, 114, 182, 0.4); top: 30%; }
+    .chart-line.youtube { background: linear-gradient(90deg, transparent, #dc2626, #ef4444, transparent); box-shadow: 0 0 30px rgba(220, 38, 38, 0.8), 0 0 60px rgba(239, 68, 68, 0.4); }
+    .chart-placeholder::before, .chart-placeholder::after { content: ''; position: absolute; width: 100%; height: 1px; background: linear-gradient(90deg, transparent, rgba(236, 72, 153, 0.6), transparent); animation: holographic-sweep 4s ease-in-out infinite reverse; box-shadow: 0 0 20px rgba(236, 72, 153, 0.6); }
+    .chart-placeholder::before { top: 50%; animation-delay: -1s; }
+    .chart-placeholder::after { top: 70%; animation-delay: -2s; background: linear-gradient(90deg, transparent, rgba(244, 114, 182, 0.4), transparent); }
+    .chart-placeholder.youtube::before, .chart-placeholder.youtube::after { background: linear-gradient(90deg, transparent, rgba(220, 38, 38, 0.6), transparent); box-shadow: 0 0 20px rgba(220, 38, 38, 0.6); }
+    .chart-placeholder.youtube::after { background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.4), transparent); }
+    @keyframes holographic-sweep { 0%{ transform: translateX(-120%) skewX(-15deg); opacity: 0;} 10%{opacity:1;} 50%{ transform: translateX(0) skewX(0deg); opacity:1;} 90%{opacity:1;} 100%{ transform: translateX(120%) skewX(15deg); opacity:0;} }
+    .chart-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(236, 72, 153, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(236, 72, 153, 0.1) 1px, transparent 1px); background-size: 30px 30px; animation: grid-pulse 6s ease-in-out infinite; }
+    .chart-grid.youtube { background-image: linear-gradient(rgba(220, 38, 38, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(220, 38, 38, 0.1) 1px, transparent 1px); }
+    @keyframes grid-pulse { 0%,100%{opacity:0.3;} 50%{opacity:0.7;} }
+    .data-point { position: absolute; width: 8px; height: 8px; background: radial-gradient(circle, #ec4899, #f472b6); border-radius: 50%; box-shadow: 0 0 20px rgba(236, 72, 153, 0.8), 0 0 40px rgba(236, 72, 153, 0.4); animation: data-pulse 2s ease-in-out infinite; }
+    .data-point.youtube { background: radial-gradient(circle, #dc2626, #ef4444); box-shadow: 0 0 20px rgba(220, 38, 38, 0.8), 0 0 40px rgba(220, 38, 38, 0.4); }
+    @keyframes data-pulse { 0%,100%{ transform: scale(1); opacity:0.8;} 50%{ transform: scale(1.5); opacity:1;} }
+
+    .activity-tracker-container { position: relative; }
+    .activity-heatmap { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; }
+    .heatmap-container { display: flex; gap: 0; align-items: flex-start; background: rgba(15, 23, 42, 0.3); border-radius: 12px; padding: 1.5rem; border: 1px solid rgba(59, 130, 246, 0.2); }
+    .heatmap-labels { display: flex; flex-direction: column; gap: 0; }
+    .time-labels { display: flex; justify-content: space-between; width: 320px; margin-bottom: 1rem; margin-left: 80px; padding: 0 10px; }
+    .time-labels span { font-size: 0.8rem; color: #60a5fa; font-weight: 600; letter-spacing: 1px; text-shadow: 0 0 10px rgba(96, 165, 250, 0.5); }
+    .day-labels { display: flex; flex-direction: column; gap: 0; width: 70px; margin-right: 10px; }
+    .day-labels span { height: 40px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; color: rgba(255, 255, 255, 0.9); letter-spacing: 1px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; margin-bottom: 2px; border: 1px solid rgba(59, 130, 246, 0.2); text-shadow: 0 0 8px rgba(96, 165, 250, 0.3); transition: all 0.3s ease; }
+    .day-labels span:hover { background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.4); transform: translateX(3px); }
+    .heatmap-grid { display: flex; flex-direction: column; gap: 2px; }
+    .day-row { display: flex; gap: 2px; align-items: center; }
+    .activity-cell { width: 75px; height: 38px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.15); position: relative; transition: all 0.3s ease; cursor: pointer; animation: cell-pulse 4s ease-in-out infinite; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 600; color: rgba(255, 255, 255, 0.8); }
+    .activity-cell::after { content: attr(data-hour); font-size: 0.65rem; opacity: 0.7; font-weight: 500; }
+    .activity-cell:hover { transform: scale(1.05); z-index: 10; border-color: rgba(255, 255, 255, 0.4); }
+    .activity-cell.minimal { background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(51, 65, 85, 0.6)); border-color: rgba(71, 85, 105, 0.4); box-shadow: inset 0 0 15px rgba(30, 41, 59, 0.7); }
+    .activity-cell.minimal::after { color: rgba(255, 255, 255, 0.5); }
+    .activity-cell.low { background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(96, 165, 250, 0.2)); border-color: rgba(59, 130, 246, 0.5); box-shadow: inset 0 0 20px rgba(59, 130, 246, 0.4), 0 0 8px rgba(59, 130, 246, 0.3); }
+    .activity-cell.medium { background: linear-gradient(135deg, rgba(168, 85, 247, 0.4), rgba(196, 181, 253, 0.3)); border-color: rgba(168, 85, 247, 0.6); box-shadow: inset 0 0 20px rgba(168, 85, 247, 0.5), 0 0 10px rgba(168, 85, 247, 0.4); }
+    .activity-cell.high { background: linear-gradient(135deg, rgba(236, 72, 153, 0.5), rgba(244, 114, 182, 0.4)); border-color: rgba(236, 72, 153, 0.7); box-shadow: inset 0 0 25px rgba(236, 72, 153, 0.6), 0 0 15px rgba(236, 72, 153, 0.5); }
+    .activity-cell.very-high { background: linear-gradient(135deg, rgba(239, 68, 68, 0.6), rgba(248, 113, 113, 0.5)); border-color: rgba(239, 68, 68, 0.8); box-shadow: inset 0 0 30px rgba(239, 68, 68, 0.7), 0 0 18px rgba(239, 68, 68, 0.6); }
+    .activity-cell.extreme { background: radial-gradient(circle, rgba(220, 38, 38, 0.9), rgba(239, 68, 68, 0.7)); border-color: rgba(220, 38, 38, 1); box-shadow: inset 0 0 35px rgba(220, 38, 38, 0.8), 0 0 25px rgba(220, 38, 38, 0.7), 0 0 50px rgba(220, 38, 38, 0.4); animation: extreme-pulse 2s ease-in-out infinite; }
+    .activity-cell.extreme::after { color: rgba(255, 255, 255, 1); text-shadow: 0 0 5px rgba(255, 255, 255, 0.8); }
+    @keyframes cell-pulse { 0%,100%{ transform: scale(1);} 50%{ transform: scale(1.02);} }
+    @keyframes extreme-pulse { 0%,100%{ box-shadow: inset 0 0 30px rgba(220, 38, 38, 0.7), 0 0 20px rgba(220, 38, 38, 0.6), 0 0 40px rgba(220, 38, 38, 0.3);} 50%{ box-shadow: inset 0 0 40px rgba(220, 38, 38, 0.9), 0 0 30px rgba(220, 38, 38, 0.8), 0 0 60px rgba(220, 38, 38, 0.5);} }
+
+    .activity-legend { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; align-items: center; }
+    .legend-title { font-size: 0.85rem; font-weight: 600; color: rgba(255, 255, 255, 0.8); letter-spacing: 1px; margin-bottom: 0.25rem; }
+    .legend-scale { display: flex; gap: 1rem; align-items: center; }
+    .legend-item { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
+    .legend-color { width: 20px; height: 12px; border-radius: 3px; border: 1px solid rgba(255, 255, 255, 0.2); }
+    .legend-item.minimal .legend-color { background: rgba(30, 41, 59, 0.6); }
+    .legend-item.low .legend-color { background: rgba(59, 130, 246, 0.4); box-shadow: 0 0 5px rgba(59, 130, 246, 0.3); }
+    .legend-item.medium .legend-color { background: rgba(168, 85, 247, 0.5); box-shadow: 0 0 5px rgba(168, 85, 247, 0.4); }
+    .legend-item.high .legend-color { background: rgba(236, 72, 153, 0.6); box-shadow: 0 0 8px rgba(236, 72, 153, 0.4); }
+    .legend-item.very-high .legend-color { background: rgba(239, 68, 68, 0.7); box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+    .legend-item.extreme .legend-color { background: radial-gradient(circle, rgba(220, 38, 38, 0.9), rgba(239, 68, 68, 0.7)); box-shadow: 0 0 15px rgba(220, 38, 38, 0.6); }
+    .legend-item span { font-size: 0.7rem; color: rgba(255, 255, 255, 0.6); font-weight: 500; }
+
+    .activity-insights { margin-top: 1.5rem; display: flex; gap: 2rem; justify-content: center; }
+    .insight-item { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
+    .insight-label { font-size: 0.75rem; color: rgba(255, 255, 255, 0.6); font-weight: 500; letter-spacing: 1px; }
+    .insight-value { font-size: 0.9rem; color: #60a5fa; font-weight: 600; text-shadow: 0 0 10px rgba(96, 165, 250, 0.5); }
+
+    .activity-feed { background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(20px); border-radius: 20px; padding: 2.5rem; border: 1px solid rgba(59, 130, 246, 0.15); position: relative; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05); }
+    .activity-item { display: flex; align-items: center; gap: 1.25rem; padding: 1.25rem 0; border-bottom: 1px solid rgba(59, 130, 246, 0.1); transition: all 0.3s ease; position: relative; }
+    .activity-item::before { content: ''; position: absolute; left: -2.5rem; top: 0; width: 2px; height: 100%; background: linear-gradient(135deg, #60a5fa, #a78bfa); opacity: 0; transition: opacity 0.3s ease; }
+    .activity-item:hover::before { opacity: 1; }
+    .activity-item:hover { background: rgba(59, 130, 246, 0.05); border-radius: 12px; padding-left: 1.5rem; padding-right: 1.5rem; border-color: rgba(59, 130, 246, 0.2); }
+    .activity-dot { width: 16px; height: 16px; border-radius: 50%; background: linear-gradient(135deg, #60a5fa, #a78bfa); flex-shrink: 0; animation: pulse-glow 3s ease-in-out infinite; box-shadow: 0 0 20px rgba(96, 165, 250, 0.6); }
+    .activity-dot.youtube { background: linear-gradient(135deg, #ef4444, #f87171); box-shadow: 0 0 20px rgba(239, 68, 68, 0.6); }
+    @keyframes pulse-glow { 0%,100%{ transform: scale(1); box-shadow: 0 0 20px rgba(96,165,250,0.6);} 50%{ transform: scale(1.2); box-shadow: 0 0 30px rgba(96,165,250,0.9);} }
+    .activity-content { flex: 1; }
+    .activity-title { font-weight: 600; margin-bottom: 0.5rem; color: rgba(255, 255, 255, 0.9); }
+    .activity-time { color: rgba(255, 255, 255, 0.5); font-size: 0.85rem; font-weight: 400; }
+    .auto-post-status { background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.3); border-radius: 12px; padding: 0.75rem 1.25rem; display: flex; align-items: center; gap: 0.75rem; font-size: 0.9rem; margin-left: auto; box-shadow: 0 4px 12px rgba(52, 211, 153, 0.2); }
+    .auto-post-status.inactive { background: rgba(248, 113, 113, 0.1); border-color: rgba(248, 113, 113, 0.3); box-shadow: 0 4px 12px rgba(248, 113, 113, 0.2); }
+
+    .floating-particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1; }
+    .particle { position: absolute; width: 6px; height: 6px; background: rgba(96, 165, 250, 0.4); border-radius: 50%; animation: particle-float 25s infinite linear; box-shadow: 0 0 10px rgba(96, 165, 250, 0.6); }
+    .particle.youtube { background: rgba(239, 68, 68, 0.4); box-shadow: 0 0 10px rgba(239, 68, 68, 0.6); }
+    @keyframes particle-float { 0%{ transform: translateY(100vh) rotate(0deg) scale(0); opacity: 0;} 10%{ opacity: 1; transform: translateY(90vh) rotate(45deg) scale(1);} 90%{ opacity: 1; transform: translateY(-10vh) rotate(315deg) scale(1);} 100%{ transform: translateY(-20vh) rotate(360deg) scale(0); opacity: 0;} }
+
+    .grid-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; }
+    .charts-row { display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; margin-bottom: 2rem; }
+    .status-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #34d399; animation: status-pulse 2s infinite; box-shadow: 0 0 10px rgba(52, 211, 153, 0.6); }
+    @keyframes status-pulse { 0%{ transform: scale(1); opacity: 1; box-shadow: 0 0 10px rgba(52,211,153,0.6);} 50%{ transform: scale(1.3); opacity: 0.7; box-shadow: 0 0 20px rgba(52,211,153,0.8);} 100%{ transform: scale(1); opacity: 1; box-shadow: 0 0 10px rgba(52,211,153,0.6);} }
+
+    .platform-data { display: none; animation: luxury-fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+    .platform-data.active { display: block; }
+    @keyframes luxury-fadeIn { from { opacity: 0; transform: translateY(30px) scale(0.95);} to { opacity: 1; transform: translateY(0) scale(1);} }
+
+    .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); z-index: 999; opacity: 0; visibility: hidden; transition: all 0.4s ease; }
+    .menu-overlay.show { opacity: 1; visibility: visible; }
+
+    .tooltip { position: absolute; bottom: calc(100% + 15px); left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); padding: 1rem 1.5rem; border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.3); color: rgba(255,255,255,0.9); font-size: 0.85rem; font-weight: 500; white-space: nowrap; opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.3), 0 0 0 1px rgba(59,130,246,0.1); }
+    .tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 6px solid transparent; border-top-color: rgba(15, 23, 42, 0.95); filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)); }
+    .metric-card:hover .tooltip { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(-5px); }
+
+    .wave-indicator { position: absolute; bottom: 20px; left: 20px; right: 20px; height: 40px; overflow: hidden; border-radius: 8px; background: rgba(59, 130, 246, 0.1); }
+    .wave-indicator.youtube { background: rgba(239, 68, 68, 0.1); }
+    .wave-line { position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(90deg, #60a5fa, #a78bfa); animation: wave-flow 3s ease-in-out infinite; transform-origin: left center; }
+    .wave-line.youtube { background: linear-gradient(90deg, #ef4444, #f87171); }
+    .wave-line.active { height: 20px; animation-duration: 1.5s; }
+    @keyframes wave-flow { 0%,100%{ transform: scaleY(0.3) translateX(-20px); opacity: 0.6;} 50%{ transform: scaleY(1) translateX(20px); opacity: 1;} }
+
+    /* Scrape Modal */
+    .scrape-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(15px); z-index: 10000; display: none; align-items: center; justify-content: center; opacity: 0; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+    .scrape-modal.show { opacity: 1; }
+    .scrape-container { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(30px); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 20px; width: 90%; max-width: 1200px; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 25px 50px rgba(0,0,0,0.5), 0 0 0 1px rgba(59,130,246,0.1), inset 0 1px 0 rgba(255,255,255,0.05); }
+    .scrape-header { display: flex; justify-content: space-between; align-items: center; padding: 2rem 2.5rem; border-bottom: 1px solid rgba(59, 130, 246, 0.1); }
+    .scrape-title { font-size: 2rem; font-weight: 700; background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; display: flex; align-items: center; gap: 1rem; }
+    .scrape-icon { font-size: 2.5rem; animation: spider-crawl 3s ease-in-out infinite; }
+    @keyframes spider-crawl { 0%,100%{ transform: rotate(0deg) scale(1);} 25%{ transform: rotate(-5deg) scale(1.05);} 75%{ transform: rotate(5deg) scale(0.95);} }
+    .close-scrape-btn { width: 48px; height: 48px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; color: #f87171; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 600; }
+    .close-scrape-btn:hover { background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.5); transform: scale(1.05); }
+    .scrape-content { padding: 2.5rem; }
+    .scrape-section { margin-bottom: 3rem; }
+    .section-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 1.5rem; background: linear-gradient(135deg, #ffffff, #60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .input-group { margin-bottom: 1.5rem; }
+    .input-group label { display: block; margin-bottom: 0.5rem; color: rgba(255,255,255,0.8); font-weight: 500; }
+    .scrape-input, .scrape-select { width: 100%; padding: 1rem 1.5rem; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 12px; color: #ffffff; font-family: 'Space Grotesk', sans-serif; font-size: 1rem; transition: all 0.3s ease; }
+    .scrape-input:focus, .scrape-select:focus { outline: none; border-color: rgba(59, 130, 246, 0.5); background: rgba(15, 23, 42, 0.8); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+    .platform-selector { display: flex; gap: 1rem; margin-top: 1rem; }
+    .platform-select-btn { padding: 1rem 2rem; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 12px; color: rgba(255, 255, 255, 0.8); cursor: pointer; transition: all 0.3s ease; font-weight: 500; display: flex; align-items: center; gap: 0.5rem; }
+    .platform-select-btn.active { background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.5); color: #60a5fa; }
+    .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
+    .setting-item { display: flex; flex-direction: column; gap: 0.5rem; }
+    .setting-hint { font-size: 0.8rem; color: rgba(255, 255, 255, 0.5); }
+    .advanced-filters { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid rgba(59, 130, 246, 0.1); }
+    .filter-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: rgba(255, 255, 255, 0.9); }
+    .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+    .filter-checkbox { display: flex; align-items: center; gap: 0.75rem; cursor: pointer; padding: 0.75rem; border-radius: 8px; transition: background 0.3s ease; }
+    .filter-checkbox:hover { background: rgba(59, 130, 246, 0.05); }
+    .filter-checkbox input { display: none; }
+    .checkmark { width: 20px; height: 20px; border: 2px solid rgba(59, 130, 246, 0.4); border-radius: 4px; position: relative; transition: all 0.3s ease; }
+    .filter-checkbox input:checked + .checkmark { background: linear-gradient(135deg, #60a5fa, #a78bfa); border-color: transparent; }
+    .filter-checkbox input:checked + .checkmark::after { content: '✓'; position: absolute; color: #ffffff; font-size: 0.8rem; font-weight: bold; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+    .scrape-actions { display: flex; gap: 1.5rem; justify-content: center; margin-top: 3rem; }
+    .scrape-btn { padding: 1rem 2rem; border: none; border-radius: 12px; font-family: 'Space Grotesk', sans-serif; font-weight: 600; cursor: pointer; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; gap: 0.75rem; position: relative; overflow: hidden; }
+    .preview-btn { background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa; }
+    .preview-btn:hover { background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.5); transform: translateY(-2px); }
+    .start-btn { background: linear-gradient(135deg, #ec4899, #f472b6); color: white; box-shadow: 0 8px 25px rgba(236, 72, 153, 0.4); }
+    .start-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 35px rgba(236, 72, 153, 0.6); }
+    .btn-icon { font-size: 1.1rem; }
+    .btn-glow { position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent); transition: left 0.6s; }
+    .start-btn:hover .btn-glow { left: 100%; }
+    .scrape-results { margin-top: 3rem; padding-top: 3rem; border-top: 1px solid rgba(59, 130, 246, 0.1); }
+    .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .results-header h3 { font-size: 1.4rem; font-weight: 600; color: rgba(255, 255, 255, 0.9); }
+    .results-stats { display: flex; gap: 2rem; }
+    .stat-item { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
+    .stat-label { font-size: 0.8rem; color: rgba(255, 255, 255, 0.6); font-weight: 500; }
+    .stat-value { font-size: 1.2rem; font-weight: 700; color: #60a5fa; }
+    .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .video-result-card { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 12px; padding: 1rem; transition: all 0.3s ease; animation: cardSlideIn 0.4s ease; }
+    .video-result-card:hover { border-color: rgba(59, 130, 246, 0.4); transform: translateY(-2px); box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2); }
+    @keyframes cardSlideIn { from { opacity: 0; transform: translateY(20px);} to { opacity: 1; transform: translateY(0);} }
+    .video-thumbnail { position: relative; height: 120px; background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(168,85,247,0.1)); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; overflow: hidden; }
+    .platform-badge { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.7); padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.8rem; }
+    .video-stats { position: absolute; bottom: 8px; right: 8px; display: flex; flex-direction: column; gap: 0.25rem; }
+    .stat { background: rgba(0,0,0,0.7); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.7rem; color: #34d399; font-weight: 600; }
+    .video-title { font-size: 1rem; font-weight: 600; color: #ffffff; margin: 0 0 0.5rem 0; }
+    .video-desc { font-size: 0.8rem; color: rgba(255, 255, 255, 0.6); margin: 0 0 1rem 0; }
+    .video-actions { display: flex; justify-content: space-between; align-items: center; }
+    .video-checkbox { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.8rem; }
+    .video-checkbox input { display: none; }
+    .checkmark-small { width: 16px; height: 16px; border: 2px solid rgba(59, 130, 246, 0.4); border-radius: 3px; transition: all 0.3s ease; position: relative; }
+    .video-checkbox input:checked + .checkmark-small { background: linear-gradient(135deg, #60a5fa, #a78bfa); border-color: transparent; }
+    .video-checkbox input:checked + .checkmark-small::after { content: '✓'; position: absolute; color: #ffffff; font-size: 0.7rem; font-weight: bold; transform: translate(-50%, -50%); top: 50%; left: 50%; }
+    .quick-post-btn { padding: 0.5rem 1rem; background: linear-gradient(135deg, #ec4899, #f472b6); border: none; border-radius: 6px; color: #ffffff; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+    .quick-post-btn:hover { background: linear-gradient(135deg, #db2777, #ec4899); transform: scale(1.05); box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4); }
+    .bulk-actions { display: flex; gap: 1rem; justify-content: center; margin-top: 2rem; }
+    .bulk-btn { padding: 0.75rem 1.5rem; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 10px; color: rgba(255, 255, 255, 0.8); cursor: pointer; transition: all 0.3s ease; font-weight: 500; }
+    .bulk-btn:hover { background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.4); color: #60a5fa; }
+    .post-selected-btn { background: linear-gradient(135deg, #34d399, #10b981); border-color: transparent; color: white; }
+    .post-selected-btn:hover { background: linear-gradient(135deg, #10b981, #059669); transform: translateY(-2px); box-shadow: 0 8px 25px rgba(52,211,153,0.4); }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      .dashboard-container { padding: 1.5rem; }
+      .header { flex-direction: column; gap: 1.5rem; text-align: center; padding: 1.5rem 0; }
+      .logo { position: static; transform: none; margin-bottom: 1rem; font-size: 1.8rem; }
+      .platform-switcher { order: 2; justify-content: center; gap: 0.75rem; }
+      .platform-btn { padding: 0.75rem 1.5rem; font-size: 0.9rem; }
+      .header-right { order: 1; justify-content: center; }
+      .metrics-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+      .metric-card { padding: 2rem; }
+      .metric-value { font-size: 2.5rem; }
+      .charts-row { grid-template-columns: 1fr; gap: 1.5rem; }
+      .grid-layout { grid-template-columns: 1fr; }
+      .chart-container, .activity-feed { padding: 2rem; }
+      .tooltip { font-size: 0.8rem; padding: 0.75rem 1rem; }
+      .scrape-container { width: 95%; margin: 1rem; }
+      .scrape-header { padding: 1.5rem; }
+      .scrape-content { padding: 1.5rem; }
+      .platform-selector { flex-direction: column; }
+      .settings-grid { grid-template-columns: 1fr; }
+      .filter-grid { grid-template-columns: 1fr; }
+      .scrape-actions { flex-direction: column; }
+      .results-grid { grid-template-columns: 1fr; }
+      .bulk-actions { flex-direction: column; }
+    }
+    @media (max-width: 480px) {
+      .dashboard-container { padding: 1rem; }
+      .metric-card { padding: 1.5rem; }
+      .metric-value { font-size: 2rem; }
+      .chart-container, .activity-feed { padding: 1.5rem; }
+      .platform-btn { padding: 0.6rem 1.2rem; font-size: 0.85rem; }
+      .scrape-title { font-size: 1.5rem; }
+      .heatmap-container { padding: 1rem; }
+      .time-labels { width: 280px; margin-left: 60px; }
+      .day-labels { width: 50px; }
+      .activity-cell { width: 65px; height: 32px; }
+    }
+
+    .metric-card, .chart-container, .activity-feed { will-change: transform; }
+    @media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
+    .platform-btn:focus, .menu-btn:focus, .control-btn:focus, .menu-item:focus, .scrape-btn:focus, .scrape-input:focus, .scrape-select:focus { outline: 2px solid #60a5fa; outline-offset: 2px; }
+  </style>
+</head>
+<body>
+  <div class="floating-particles" id="particles"></div>
+  <div class="menu-overlay" id="menuOverlay"></div>
+
+  <div class="dashboard-container">
+    <header class="header">
+      <div class="platform-switcher">
+        <button class="platform-btn instagram active" onclick="switchPlatform('instagram')">📷 Instagram</button>
+        <button class="platform-btn youtube" onclick="switchPlatform('youtube')">▶️ YouTube</button>
+      </div>
+      <div class="logo">Lifestyle Design Social</div>
+      <div class="header-right">
+        <button class="post-now-btn" onclick="handlePostNow()"><span class="post-icon">⚡️</span><span class="post-text">Post Now</span><div class="post-glow"></div></button>
+        <div class="menu-container">
+          <div class="menu-btn" id="menuBtn" onclick="toggleMenu()"><span class="menu-icon">⋮</span></div>
+          <div class="dropdown-menu" id="dropdownMenu">
+            <div class="menu-item" onclick="handleMenuClick('upload')"><div class="menu-item-icon">📤</div><span>Upload Videos</span></div>
+            <div class="menu-item" onclick="handleMenuClick('scrape')"><div class="menu-item-icon">🕷️</div><span>Scrape Dashboard</span></div>
+            <div class="menu-item" onclick="handleMenuClick('autopilot')"><div class="menu-item-icon">🚀</div><span>AutoPilot</span></div>
+            <div class="menu-item" onclick="handleMenuClick('manual')"><div class="menu-item-icon">✍</div><span>Manual Post</span></div>
+            <div class="menu-item" onclick="handleMenuClick('cartoons')"><div class="menu-item-icon">🎬</div><span>Cartoons</span></div>
+            <div class="menu-item" onclick="handleMenuClick('settings')"><div class="menu-item-icon">⚙</div><span>Settings</span></div>
+          </div>
+        </div>
+        <div class="user-profile"><div class="avatar">SM</div><div class="status-indicator"></div></div>
+      </div>
+    </header>
+
+    <div id="instagram-data" class="platform-data active">
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="tooltip">Reach is up 23% since last week - trending content performing exceptionally well</div>
+          <div class="metric-header"><span class="metric-title">Followers</span><div class="metric-icon">👥</div></div>
+          <div class="metric-value">24.8K</div>
+          <div class="metric-change change-positive">↗ +15.7% this week</div>
+        </div>
+        <div class="metric-card">
+          <div class="tooltip">Engagement velocity increasing - posts receiving 40% more interactions</div>
+          <div class="metric-header"><span class="metric-title">Likes</span><div class="metric-icon">❤️</div></div>
+          <div class="metric-value">156K</div>
+          <div class="metric-change change-positive">↗ +5.2% this week</div>
+        </div>
+        <div class="metric-card">
+          <div class="tooltip">Above industry average - optimal posting time detected</div>
+          <div class="metric-header"><span class="metric-title">Engagement Rate</span><div class="metric-icon">❤️</div></div>
+          <div class="metric-value">4.7%</div>
+          <div class="metric-change change-positive">↗ +0.8% from last post</div>
+        </div>
+        <div class="metric-card">
+          <div class="tooltip">Audience growth accelerating - algorithm favor detected</div>
+          <div class="metric-header"><span class="metric-title">Reach</span><div class="metric-icon">📊</div></div>
+          <div class="metric-value">89.2K</div>
+          <div class="metric-change change-positive">↗ +12.4% today</div>
+        </div>
+        <div class="metric-card">
+          <div class="tooltip">AI-powered scheduling optimizing for peak engagement windows</div>
+          <div class="metric-header"><span class="metric-title">Auto-Post Status</span><div class="auto-post-status"><div class="status-indicator"></div>Active</div></div>
+          <div class="metric-value">3/day</div>
+          <div class="metric-change">Next post in 2h 15m</div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-container">
+          <div class="chart-header"><h2 class="chart-title">Instagram Analytics</h2><div class="chart-controls"><button class="control-btn active">7D</button><button class="control-btn">30D</button><button class="control-btn">90D</button><button class="control-btn active">Live</button></div></div>
+          <div class="chart-placeholder"><div class="chart-grid"></div><div class="chart-line"></div><canvas id="instagramChart" width="800" height="300"></canvas><div class="wave-indicator"><div class="wave-line active"></div></div><div class="data-point" style="top: 25%; left: 15%; animation-delay: 0s;"></div><div class="data-point" style="top: 45%; left: 35%; animation-delay: 0.5s;"></div><div class="data-point" style="top: 30%; left: 55%; animation-delay: 1s;"></div><div class="data-point" style="top: 20%; left: 75%; animation-delay: 1.5s;"></div><div class="data-point" style="top: 35%; left: 85%; animation-delay: 2s;"></div></div>
+          <div style="text-align:center; margin-top:1rem; color: rgba(255, 255, 255, 0.5); font-size: 0.8rem;">Lines reflect post activity & engagement</div>
+        </div>
+        <div class="chart-container activity-tracker-container">
+          <div class="chart-header"><h2 class="chart-title">Audience Activity Heatmap</h2><div class="chart-controls"><button class="control-btn active" onclick="switchActivityView('live')">Live</button><button class="control-btn" onclick="switchActivityView('weekly')">Weekly Avg</button></div></div>
+          <div class="chart-placeholder activity-heatmap">
+            <div class="chart-grid"></div><div class="chart-line"></div><canvas id="engagementChart" width="400" height="300"></canvas><div class="wave-indicator"><div class="wave-line"></div></div>
+            <div class="heatmap-container" id="liveData">
+              <div class="heatmap-labels">
+                <div class="time-labels"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>
+                <div class="day-labels"><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span></div>
+              </div>
+              <div class="heatmap-grid">
+                <div class="day-row" data-day="mon"><div class="activity-cell low" data-hour="0-6"></div><div class="activity-cell medium" data-hour="6-12"></div><div class="activity-cell high" data-hour="12-18"></div><div class="activity-cell very-high" data-hour="18-24"></div></div>
+                <div class="day-row" data-day="tue"><div class="activity-cell low" data-hour="0-6"></div><div class="activity-cell high" data-hour="6-12"></div><div class="activity-cell very-high" data-hour="12-18"></div><div class="activity-cell medium" data-hour="18-24"></div></div>
+                <div class="day-row" data-day="wed"><div class="activity-cell minimal" data-hour="0-6"></div><div class="activity-cell medium" data-hour="6-12"></div><div class="activity-cell very-high" data-hour="12-18"></div><div class="activity-cell high" data-hour="18-24"></div></div>
+                <div class="day-row" data-day="thu"><div class="activity-cell low" data-hour="0-6"></div><div class="activity-cell high" data-hour="6-12"></div><div class="activity-cell extreme" data-hour="12-18"></div><div class="activity-cell very-high" data-hour="18-24"></div></div>
+                <div class="day-row" data-day="fri"><div class="activity-cell minimal" data-hour="0-6"></div><div class="activity-cell medium" data-hour="6-12"></div><div class="activity-cell extreme" data-hour="12-18"></div><div class="activity-cell extreme" data-hour="18-24"></div></div>
+                <div class="day-row" data-day="sat"><div class="activity-cell low" data-hour="0-6"></div><div class="activity-cell low" data-hour="6-12"></div><div class="activity-cell high" data-hour="12-18"></div><div class="activity-cell very-high" data-hour="18-24"></div></div>
+                <div class="day-row" data-day="sun"><div class="activity-cell minimal" data-hour="0-6"></div><div class="activity-cell low" data-hour="6-12"></div><div class="activity-cell medium" data-hour="12-18"></div><div class="activity-cell high" data-hour="18-24"></div></div>
+              </div>
+            </div>
+            <div class="heatmap-container" id="weeklyData" style="display: none;">
+              <div class="heatmap-labels">
+                <div class="time-labels"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>
+                <div class="day-labels"><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span></div>
+              </div>
+              <div class="heatmap-grid">
+                <div class="day-row" data-day="mon"><div class="activity-cell minimal" data-hour="0-6"></div><div class="activity-cell low" data-hour="6-12"></div><div class="activity-cell medium" data-hour="12-18"></div><div class="activity-cell high" data-hour="18-24"></div></div>
+                <div class="day-row" data-day="tue"><div class="activity-cell minimal" data-hour="0-6"></div><div class="activity-cell medium" data-hour="6-12"></div><div class="activity-cell high" data-hour="12-18"></div><div class="activity-cell high" data-hour="18-24"></div></div>
+                <div class="day-row" data-day="wed"><div class="activity-cell low" data-hour="0-6"></div><div class="activity-cell high" data-hour="6-12"></div><div class="activity-cell extreme" data-hour="12-18"></div><div class="activity-cell very-high" data-hour="18-24"></div></div>
+                <div class="day-row" data-day="thu"><div class="activity-cell minimal" data-hour="0-6"></div><div class="activity-cell medium" data-hour="6-12"></div><div class="activity-cell extreme" data-hour="12-18"></div><div class="activity-cell extreme" data-hour="18-24"></div></div>
+                <div class="day-row" data-day="fri"><div class="activity-cell low" data-hour="0-6"></div><div class="activity-cell high" data-hour="6-12"></div><div class="activity-cell very-high" data-hour="12-18"></div><div class="activity-cell very-high" data-hour="18-24"></div></div>
+                <div class="day-row" data-day="sat"><div class="activity-cell minimal" data-hour="0-6"></div><div class="activity-cell low" data-hour="6-12"></div><div class="activity-cell medium" data-hour="12-18"></div><div class="activity-cell high" data-hour="18-24"></div></div>
+                <div class="day-row" data-day="sun"><div class="activity-cell minimal" data-hour="0-6"></div><div class="activity-cell minimal" data-hour="6-12"></div><div class="activity-cell low" data-hour="12-18"></div><div class="activity-cell medium" data-hour="18-24"></div></div>
+              </div>
+            </div>
+            <div class="activity-legend">
+              <span class="legend-title">Activity Level</span>
+              <div class="legend-scale">
+                <div class="legend-item minimal"><div class="legend-color"></div><span>Minimal</span></div>
+                <div class="legend-item low"><div class="legend-color"></div><span>Low</span></div>
+                <div class="legend-item medium"><div class="legend-color"></div><span>Medium</span></div>
+                <div class="legend-item high"><div class="legend-color"></div><span>High</span></div>
+                <div class="legend-item very-high"><div class="legend-color"></div><span>Very High</span></div>
+                <div class="legend-item extreme"><div class="legend-color"></div><span>Peak</span></div>
+              </div>
+            </div>
+            <div class="activity-insights" id="activityInsights">
+              <div class="insight-item"><span class="insight-label">Peak Time:</span><span class="insight-value">Thu-Fri 12-18h</span></div>
+              <div class="insight-item"><span class="insight-label">Optimal Posting:</span><span class="insight-value">Weekdays 14:30</span></div>
+            </div>
+          </div>
+          <div style="text-align:center; margin-top:1rem; color: rgba(255, 255, 255, 0.5); font-size: 0.8rem;" id="activityStatus">Real-time audience engagement patterns • Updates every 15 minutes</div>
+        </div>
+      </div>
+
+      <div class="grid-layout">
+        <div></div>
+        <div class="activity-feed">
+          <h2 style="margin-bottom: 2rem; font-size: 1.6rem; font-weight: 600; background: linear-gradient(135deg, #ffffff, #60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Recent Activity</h2>
+          <div class="activity-item"><div class="activity-dot"></div><div class="activity-content"><div class="activity-title">Post auto-published</div><div class="activity-time">12 minutes ago</div></div></div>
+          <div class="activity-item"><div class="activity-dot"></div><div class="activity-content"><div class="activity-title">Story view milestone reached</div><div class="activity-time">1 hour ago</div></div></div>
+          <div class="activity-item"><div class="activity-dot"></div><div class="activity-content"><div class="activity-title">New follower surge detected</div><div class="activity-time">3 hours ago</div></div></div>
+          <div class="activity-item"><div class="activity-dot"></div><div class="activity-content"><div class="activity-title">Engagement goal achieved</div><div class="activity-time">6 hours ago</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="youtube-data" class="platform-data">
+      <div class="metrics-grid">
+        <div class="metric-card youtube"><div class="tooltip">Subscriber growth rate exceeding 95% of similar channels</div><div class="metric-header"><span class="metric-title">Subscribers</span><div class="metric-icon youtube">📺</div></div><div class="metric-value youtube">12.4K</div><div class="metric-change change-positive">↗ +3.8% this month</div></div>
+        <div class="metric-card youtube"><div class="tooltip">View velocity increasing - content resonating with target audience</div><div class="metric-header"><span class="metric-title">Views</span><div class="metric-icon youtube">👁️</div></div><div class="metric-value youtube">156K</div><div class="metric-change change-positive">↗ +8.3% this week</div></div>
+        <div class="metric-card youtube"><div class="tooltip">Audience retention strong - optimal video length detected</div><div class="metric-header"><span class="metric-title">Watch Time</span><div class="metric-icon youtube">⏱️</div></div><div class="metric-value youtube">2.1K</div><div class="metric-change change-positive">↗ +15.7% hours this week</div></div>
+        <div class="metric-card youtube"><div class="tooltip">Smart scheduling maximizing peak viewing windows</div><div class="metric-header"><span class="metric-title">Auto-Upload</span><div class="auto-post-status"><div class="status-indicator"></div>Active</div></div><div class="metric-value youtube">2/week</div><div class="metric-change">Next upload in 1d 8h</div></div>
+      </div>
+      <div class="charts-row">
+        <div class="chart-container">
+          <div class="chart-header"><h2 class="chart-title">YouTube Analytics</h2><div class="chart-controls"><button class="control-btn youtube active">7D</button><button class="control-btn youtube">30D</button><button class="control-btn youtube">90D</button><button class="control-btn youtube active">Live</button></div></div>
+          <div class="chart-placeholder youtube"><div class="chart-grid youtube"></div><div class="chart-line youtube"></div><canvas id="youtubeChart" width="800" height="300"></canvas><div class="wave-indicator youtube"><div class="wave-line youtube active"></div></div><div class="data-point youtube" style="top: 30%; left: 20%; animation-delay: 0s;"></div><div class="data-point youtube" style="top: 50%; left: 40%; animation-delay: 0.4s;"></div><div class="data-point youtube" style="top: 25%; left: 60%; animation-delay: 0.8s;"></div><div class="data-point youtube" style="top: 40%; left: 80%; animation-delay: 1.2s;"></div></div>
+          <div style="text-align:center; margin-top:1rem; color: rgba(255, 255, 255, 0.5); font-size: 0.8rem;">Lines reflect post activity & engagement</div>
+        </div>
+        <div class="chart-container activity-tracker-container">
+          <div class="chart-header"><h2 class="chart-title">Audience Activity Heatmap</h2><div class="chart-controls"><button class="control-btn youtube active" onclick="switchActivityView('live')">Live</button><button class="control-btn youtube" onclick="switchActivityView('weekly')">Weekly Avg</button></div></div>
+          <div class="chart-placeholder youtube activity-heatmap">
+            <div class="chart-grid youtube"></div><div class="chart-line youtube"></div><canvas id="likesChart" width="400" height="300"></canvas><div class="wave-indicator youtube"><div class="wave-line youtube"></div></div>
+            <div class="heatmap-container" id="youtubeLiveData">
+              <div class="heatmap-labels"><div class="time-labels"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div><div class="day-labels"><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span></div></div>
+              <div class="heatmap-grid">
+                <div class="day-row" data-day="mon"><div class="activity-cell minimal" data-hour="0-6"></div><div class="activity-cell low" data-hour="6-12"></div><div class="activity-cell medium" data-hour="12-18"></div><div class="activity-cell high" data-hour="18-24"></div></div>
+                <div class="day-row" data-day="tue"><div class="activity-cell minimal" data-hour="0-6"></div><div class="activity-cell medium" data-hour="6-12"></div><div class="activity-cell high" data-hour="12-18"></div><div class="activity-cell very-high" data-hour="18-24"></div></div>
+                <div class="day-row" data-day="wed"><div class="activity-cell low" data-hour="0-6"></div><div class="activity-cell high" data-hour="6-12"></div><div class="activity-cell extreme" data-hour="12-18"></div><div class="activity-cell high" data-hour="18-24"></div></div>
+                <div class="day-row" data-day="thu"><div class="activity-cell minimal" data-hour="0-6"></div><div class="activity-cell medium" data-hour="6-12"></div><div class="activity-cell extreme" data-hour="12-18"></div><div class="activity-cell very-high" data-hour="18-24"></div></div>
+                <div class="day-row" data-day="fri"><div class="activity-cell low" data-hour="0-6"></div><div class="activity-cell high" data-hour="6-12"></div><div class="activity-cell extreme" data-hour="12-18"></div><div class="activity-cell extreme" data-hour="18-24"></div></div>
+                <div class="day-row" data-day="sat"><div class="activity-cell minimal" data-hour="0-6"></div><div class="activity-cell low" data-hour="6-12"></div><div class="activity-cell medium" data-hour="12-18"></div><div class="activity-cell high" data-hour="18-24"></div></div>
+                <div class="day-row" data-day="sun"><div class="activity-cell minimal" data-hour="0-6"></div><div class="activity-cell minimal" data-hour="6-12"></div><div class="activity-cell low" data-hour="12-18"></div><div class="activity-cell medium" data-hour="18-24"></div></div>
+              </div>
+            </div>
+            <div class="heatmap-container" id="youtubeWeeklyData" style="display: none;">
+              <div class="heatmap-labels"><div class="time-labels"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div><div class="day-labels"><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span></div></div>
+              <div class="heatmap-grid">
+                <div class="day-row" data-day="mon"><div class="activity-cell minimal" data-hour="0-6"></div><div class="activity-cell minimal" data-hour="6-12"></div><div class="activity-cell low" data-hour="12-18"></div><div class="activity-cell medium" data-hour="18-24"></div></div>
+                <div class="day-row" data-day="tue"><div class="activity-cell minimal" data-hour="0-6"></div><div class="activity-cell low" data-hour="6-12"></div><div class="activity-cell medium" data-hour="12-18"></div><div class="activity-cell high" data-hour="18-24"></div></div>
+                <div class="day-row" data-day="wed"><div class="activity-cell minimal" data-hour="0-6"></div><div class="activity-cell medium" data-hour="6-12"></div><div class="activity-cell high" data-hour="12-18"></div><div class="activity-cell very-high" data-hour="18-24"></div></div>
+                <div class="day-row" data-day="thu"><div class="activity-cell low" data-hour="0-6"></div><div class="activity-cell high" data-hour="6-12"></div><div class="activity-cell very-high" data-hour="12-18"></div><div class="activity-cell extreme" data-hour="18-24"></div></div>
+                <div class="day-row" data-day="fri"><div class="activity-cell minimal" data-hour="0-6"></div><div class="activity-cell medium" data-hour="6-12"></div><div class="activity-cell high" data-hour="12-18"></div><div class="activity-cell high" data-hour="18-24"></div></div>
+                <div class="day-row" data-day="sat"><div class="activity-cell low" data-hour="0-6"></div><div class="activity-cell low" data-hour="6-12"></div><div class="activity-cell low" data-hour="12-18"></div><div class="activity-cell medium" data-hour="18-24"></div></div>
+                <div class="day-row" data-day="sun"><div class="activity-cell minimal" data-hour="0-6"></div><div class="activity-cell minimal" data-hour="6-12"></div><div class="activity-cell minimal" data-hour="12-18"></div><div class="activity-cell low" data-hour="18-24"></div></div>
+              </div>
+            </div>
+            <div class="activity-legend">
+              <span class="legend-title">Activity Level</span>
+              <div class="legend-scale">
+                <div class="legend-item minimal"><div class="legend-color"></div><span>Minimal</span></div>
+                <div class="legend-item low"><div class="legend-color"></div><span>Low</span></div>
+                <div class="legend-item medium"><div class="legend-color"></div><span>Medium</span></div>
+                <div class="legend-item high"><div class="legend-color"></div><span>High</span></div>
+                <div class="legend-item very-high"><div class="legend-color"></div><span>Very High</span></div>
+                <div class="legend-item extreme"><div class="legend-color"></div><span>Peak</span></div>
+              </div>
+            </div>
+            <div class="activity-insights" id="youtubeActivityInsights">
+              <div class="insight-item"><span class="insight-label">Peak Time:</span><span class="insight-value">Wed-Fri 12-18h</span></div>
+              <div class="insight-item"><span class="insight-label">Optimal Upload:</span><span class="insight-value">Wednesday 15:00</span></div>
+            </div>
+          </div>
+          <div style="text-align:center; margin-top:1rem; color: rgba(255, 255, 255, 0.5); font-size: 0.8rem;" id="youtubeActivityStatus">Real-time audience engagement patterns • Updates every 15 minutes</div>
+        </div>
+      </div>
+
+      <div class="grid-layout">
+        <div></div>
+        <div class="activity-feed">
+          <h2 style="margin-bottom: 2rem; font-size: 1.6rem; font-weight: 600; background: linear-gradient(135deg, #ffffff, #ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Recent Activity</h2>
+          <div class="activity-item"><div class="activity-dot youtube"></div><div class="activity-content"><div class="activity-title">Video auto-uploaded</div><div class="activity-time">2 hours ago</div></div></div>
+          <div class="activity-item"><div class="activity-dot youtube"></div><div class="activity-content"><div class="activity-title">Monetization milestone reached</div><div class="activity-time">1 day ago</div></div></div>
+          <div class="activity-item"><div class="activity-dot youtube"></div><div class="activity-content"><div class="activity-title">Comment engagement spike</div><div class="activity-time">2 days ago</div></div></div>
+          <div class="activity-item"><div class="activity-dot youtube"></div><div class="activity-content"><div class="activity-title">Subscriber goal achieved</div><div class="activity-time">3 days ago</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scrape Dashboard Modal -->
+  <div class="scrape-modal" id="scrapeModal">
+    <div class="scrape-container">
+      <div class="scrape-header">
+        <h1 class="scrape-title"><span class="scrape-icon">🕷️</span>Content Scraper Dashboard</h1>
+        <button class="close-scrape-btn" onclick="closeScrapeModal()"><span>✕</span></button>
+      </div>
+      <div class="scrape-content">
+        <div class="scrape-section">
+          <h2 class="section-title">Target Profile</h2>
+          <div class="input-group">
+            <label for="profileUrl">Profile URL or Username</label>
+            <input type="text" id="profileUrl" placeholder="@username or https://instagram.com/username" class="scrape-input" />
+          </div>
+          <div class="platform-selector">
+            <button class="platform-select-btn active" data-platform="instagram" onclick="selectScrapePlatform('instagram')">📷 Instagram</button>
+            <button class="platform-select-btn" data-platform="youtube" onclick="selectScrapePlatform('youtube')">▶️ YouTube</button>
+            <button class="platform-select-btn" data-platform="tiktok" onclick="selectScrapePlatform('tiktok')">🎵 TikTok</button>
+          </div>
+        </div>
+        <div class="scrape-section">
+          <h2 class="section-title">Scraping Parameters</h2>
+          <div class="settings-grid">
+            <div class="setting-item"><label for="videoCount">Videos to Scrape</label><input type="number" id="videoCount" value="10" min="1" max="100" class="scrape-input" /><span class="setting-hint">1-100 latest videos</span></div>
+            <div class="setting-item"><label for="minViews">Minimum Views</label><input type="number" id="minViews" value="1000" min="0" class="scrape-input" /><span class="setting-hint">Filter by view count</span></div>
+            <div class="setting-item"><label for="maxViews">Maximum Views</label><input type="number" id="maxViews" value="1000000" min="0" class="scrape-input" /><span class="setting-hint">Upper view limit</span></div>
+            <div class="setting-item"><label for="dateRange">Date Range</label><select id="dateRange" class="scrape-select"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last year</option><option value="all">All time</option></select></div>
+          </div>
+          <div class="advanced-filters">
+            <h3 class="filter-title">Advanced Filters</h3>
+            <div class="filter-grid">
+              <label class="filter-checkbox"><input type="checkbox" id="includeStories" checked /><span class="checkmark"></span><span>Include Stories</span></label>
+              <label class="filter-checkbox"><input type="checkbox" id="includeReels" checked /><span class="checkmark"></span><span>Include Reels/Shorts</span></label>
+              <label class="filter-checkbox"><input type="checkbox" id="skipLowQuality" /><span class="checkmark"></span><span>Skip Low Quality</span></label>
+              <label class="filter-checkbox"><input type="checkbox" id="onlyOriginal" /><span class="checkmark"></span><span>Original Content Only</span></label>
+            </div>
+          </div>
+        </div>
+        <div class="scrape-actions">
+          <button class="scrape-btn preview-btn" onclick="previewScrape()"><span class="btn-icon">👁️</span><span>Preview Results</span></button>
+          <button class="scrape-btn start-btn" onclick="startScraping()"><span class="btn-icon">🚀</span><span>Start Scraping</span><div class="btn-glow"></div></button>
+        </div>
+        <div class="scrape-results" id="scrapeResults" style="display: none;">
+          <div class="results-header"><h3>Scraping Results</h3><div class="results-stats"><span class="stat-item"><span class="stat-label">Found:</span><span class="stat-value" id="foundCount">0</span></span><span class="stat-item"><span class="stat-label">Filtered:</span><span class="stat-value" id="filteredCount">0</span></span><span class="stat-item"><span class="stat-label">Ready:</span><span class="stat-value" id="readyCount">0</span></span></div></div>
+          <div class="results-grid" id="resultsGrid"></div>
+          <div class="bulk-actions"><button class="bulk-btn" onclick="selectAllResults()">Select All</button><button class="bulk-btn" onclick="deselectAllResults()">Deselect All</button><button class="bulk-btn post-selected-btn" onclick="postSelectedContent()">⚡️ Post Selected</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentPlatform = 'instagram';
+    let menuOpen = false;
+
+    function switchPlatform(platform) {
+      try {
+        document.querySelectorAll('.platform-btn').forEach(btn => btn.classList.remove('active'));
+        const targetBtn = document.querySelector('.platform-btn.' + platform);
+        if (targetBtn) targetBtn.classList.add('active');
+        document.querySelectorAll('.platform-data').forEach(data => data.classList.remove('active'));
+        setTimeout(() => { const el = document.getElementById(platform + '-data'); if (el) el.classList.add('active'); }, 50);
+        currentPlatform = platform; updateParticleColors(); showNotification('📱 Switched to ' + platform.charAt(0).toUpperCase() + platform.slice(1));
+      } catch (error) { console.error('Error switching platform:', error); showNotification('❌ Error switching platform', 'error'); }
+    }
+
+    function toggleMenu() {
+      try {
+        const menu = document.getElementById('dropdownMenu');
+        const menuBtn = document.getElementById('menuBtn');
+        const overlay = document.getElementById('menuOverlay');
+        menuOpen = !menuOpen;
+        if (menuOpen) { menu.classList.add('show'); menuBtn.classList.add('active'); overlay.classList.add('show'); overlay.onclick = () => toggleMenu(); }
+        else { menu.classList.remove('show'); menuBtn.classList.remove('active'); overlay.classList.remove('show'); overlay.onclick = null; }
+      } catch (error) { console.error('Error toggling menu:', error); }
+    }
+
+    function handlePostNow() {
+      try {
+        const platform = currentPlatform.charAt(0).toUpperCase() + currentPlatform.slice(1);
+        showNotification('⚡️ Creating ' + platform + ' post...');
+        setTimeout(() => { showNotification('🚀 ' + platform + ' post published successfully!'); updateWaveActivity(currentPlatform, true); setTimeout(() => updateWaveActivity(currentPlatform, false), 4000); }, 1500);
+        const postBtn = document.querySelector('.post-now-btn');
+        if (postBtn) { postBtn.style.transform = 'scale(0.95)'; setTimeout(() => { postBtn.style.transform = ''; }, 150); }
+      } catch (error) { console.error('Error in post now:', error); showNotification('❌ Failed to create post', 'error'); }
+    }
+
+    function handleMenuClick(action) {
+      try {
+        toggleMenu();
+        switch (action) {
+          case 'upload': showNotification('📤 Opening Upload Videos page...'); break;
+          case 'scrape': openScrapeModal(); break;
+          case 'autopilot': showNotification('🚀 AutoPilot feature activated!'); break;
+          case 'manual': showNotification('✍ Manual Post editor opening...'); break;
+          case 'cartoons': showNotification('🎬 Cartoon generator loading...'); break;
+          case 'settings': showNotification('⚙ Settings panel opening...'); break;
+          default: showNotification('🔧 Feature coming soon!');
+        }
+      } catch (error) { console.error('Error handling menu click:', error); }
+    }
+
+    function openScrapeModal() {
+      try { const modal = document.getElementById('scrapeModal'); modal.style.display = 'flex'; setTimeout(() => modal.classList.add('show'), 10); document.body.style.overflow = 'hidden'; showNotification('🕷️ Scrape Dashboard opened'); } catch (error) { console.error('Error opening scrape modal:', error); }
+    }
+    function closeScrapeModal() {
+      try { const modal = document.getElementById('scrapeModal'); modal.classList.remove('show'); setTimeout(() => { modal.style.display = 'none'; document.body.style.overflow = ''; }, 400); showNotification('📱 Returned to dashboard'); } catch (error) { console.error('Error closing scrape modal:', error); }
+    }
+
+    function selectScrapePlatform(platform) {
+      try {
+        document.querySelectorAll('.platform-select-btn').forEach(btn => btn.classList.remove('active'));
+        const btn = document.querySelector('[data-platform="' + platform + '"]'); if (btn) btn.classList.add('active');
+        const profileInput = document.getElementById('profileUrl');
+        const placeholders = { instagram: '@username or https://instagram.com/username', youtube: '@channelname or https://youtube.com/@channel', tiktok: '@username or https://tiktok.com/@username' };
+        if (profileInput) profileInput.placeholder = placeholders[platform];
+        showNotification('🎯 Platform set to ' + platform.charAt(0).toUpperCase() + platform.slice(1));
+      } catch (error) { console.error('Error selecting scrape platform:', error); }
+    }
+
+    function previewScrape() {
+      try { const profileUrl = document.getElementById('profileUrl').value; const videoCount = document.getElementById('videoCount').value; const minViews = document.getElementById('minViews').value; if (!profileUrl) { showNotification('⚠️ Please enter a profile URL', 'error'); return; } showNotification('👁️ Generating preview...'); setTimeout(() => showNotification('🔍 Preview: Would scrape ' + videoCount + ' videos with ' + minViews + '+ views'), 1500); } catch (error) { console.error('Error in preview scrape:', error); showNotification('❌ Preview failed', 'error'); }
+    }
+
+    function startScraping() {
+      try {
+        const profileUrl = document.getElementById('profileUrl').value; const videoCount = Number(document.getElementById('videoCount').value); const minViews = document.getElementById('minViews').value; const maxViews = document.getElementById('maxViews').value; const activeBtn = document.querySelector('.platform-select-btn.active'); const activePlatform = activeBtn ? activeBtn.dataset.platform : 'instagram'; if (!profileUrl) { showNotification('⚠️ Please enter a profile URL', 'error'); return; }
+        showNotification('🚀 Starting scraping process...'); const resultsSection = document.getElementById('scrapeResults'); resultsSection.style.display = 'block'; simulateScrapingProgress(activePlatform, videoCount, minViews, maxViews);
+      } catch (error) { console.error('Error starting scraping:', error); showNotification('❌ Scraping failed to start', 'error'); }
+    }
+
+    function simulateScrapingProgress(platform, videoCount, minViews, maxViews) {
+      const foundCountEl = document.getElementById('foundCount'); const filteredCountEl = document.getElementById('filteredCount'); const readyCountEl = document.getElementById('readyCount'); const resultsGrid = document.getElementById('resultsGrid'); let found = 0; let filtered = 0; let ready = 0; resultsGrid.innerHTML = '';
+      const findingInterval = setInterval(() => { found += Math.floor(Math.random() * 3) + 1; foundCountEl.textContent = Math.min(found, videoCount); if (found >= videoCount) { clearInterval(findingInterval); showNotification('🔍 Found ' + found + ' videos, applying filters...'); const filteringInterval = setInterval(() => { if (filtered < found) { filtered++; filteredCountEl.textContent = filtered; if (Math.random() > 0.3) { ready++; readyCountEl.textContent = ready; addVideoResult(platform, ready); } } else { clearInterval(filteringInterval); showNotification('✅ Scraping complete! ' + ready + ' videos ready for posting'); } }, 200); } }, 300);
+    }
+
+    function addVideoResult(platform, index) {
+      const resultsGrid = document.getElementById('resultsGrid'); const platformEmojis = { instagram: '📷', youtube: '▶️', tiktok: '🎵' }; const randomViews = Math.floor(Math.random() * 500000) + 10000; const randomLikes = Math.floor(randomViews * (Math.random() * 0.1 + 0.02)); const videoCard = document.createElement('div'); videoCard.className = 'video-result-card'; videoCard.innerHTML = '<div class="video-thumbnail"><span class="platform-badge">' + platformEmojis[platform] + '</span><div class="video-stats"><span class="stat">' + formatNumber(randomViews) + ' views</span><span class="stat">' + formatNumber(randomLikes) + ' likes</span></div></div><div class="video-info"><h4 class="video-title">Video ' + index + ' - Trending Content</h4><p class="video-desc">Scraped from ' + platform + ' • High engagement potential</p><div class="video-actions"><label class="video-checkbox"><input type="checkbox" checked /><span class="checkmark-small"></span><span>Select</span></label><button class="quick-post-btn" onclick="quickPost(' + index + ')">⚡️ Post</button></div></div>';
+      resultsGrid.appendChild(videoCard);
+    }
+
+    function formatNumber(num) { if (num >= 1000000) { return (num / 1000000).toFixed(1) + 'M'; } else if (num >= 1000) { return (num / 1000).toFixed(1) + 'K'; } return num.toString(); }
+    function quickPost(videoIndex) { showNotification('⚡️ Posting video ' + videoIndex + '...'); setTimeout(() => { showNotification('🚀 Video ' + videoIndex + ' posted successfully!'); updateWaveActivity(currentPlatform, true); setTimeout(() => updateWaveActivity(currentPlatform, false), 3000); }, 1000); }
+    function selectAllResults() { document.querySelectorAll('.video-result-card input[type="checkbox"]').forEach(cb => cb.checked = true); showNotification('✅ All videos selected'); }
+    function deselectAllResults() { document.querySelectorAll('.video-result-card input[type="checkbox"]').forEach(cb => cb.checked = false); showNotification('❌ All videos deselected'); }
+    function postSelectedContent() { const selected = document.querySelectorAll('.video-result-card input[type="checkbox"]:checked'); const count = selected.length; if (count === 0) { showNotification('⚠️ No videos selected', 'error'); return; } showNotification('🚀 Posting ' + count + ' selected videos...'); let posted = 0; const postInterval = setInterval(() => { posted++; showNotification('📤 Posted ' + posted + '/' + count + ' videos'); if (posted >= count) { clearInterval(postInterval); showNotification('🎉 All ' + count + ' videos posted successfully!'); updateWaveActivity(currentPlatform, true); setTimeout(() => updateWaveActivity(currentPlatform, false), 5000); } }, 800); }
+
+    function switchActivityView(view) {
+      try {
+        const platform = currentPlatform;
+        const currentContainer = document.querySelector('#' + platform + '-data .chart-controls');
+        if (currentContainer) {
+          currentContainer.querySelectorAll('.control-btn').forEach(btn => btn.classList.remove('active'));
+          if (event && event.target) event.target.classList.add('active');
+        }
+        if (platform === 'instagram') {
+          const liveData = document.getElementById('liveData'); const weeklyData = document.getElementById('weeklyData'); const insights = document.getElementById('activityInsights'); const status = document.getElementById('activityStatus');
+          if (view === 'live') { liveData.style.display = 'flex'; weeklyData.style.display = 'none'; insights.innerHTML = '<div class="insight-item"><span class="insight-label">Peak Time:</span><span class="insight-value">Thu-Fri 12-18h</span></div><div class="insight-item"><span class="insight-label">Optimal Posting:</span><span class="insight-value">Weekdays 14:30</span></div>'; status.textContent = 'Real-time audience engagement patterns • Updates every 15 minutes'; }
+          else { liveData.style.display = 'none'; weeklyData.style.display = 'flex'; insights.innerHTML = '<div class="insight-item"><span class="insight-label">Best Day:</span><span class="insight-value">Wednesday</span></div><div class="insight-item"><span class="insight-label">Avg Peak:</span><span class="insight-value">12-18h Daily</span></div>'; status.textContent = 'Weekly average data • Based on last 4 weeks of activity'; }
+        }
+        if (platform === 'youtube') {
+          const liveData = document.getElementById('youtubeLiveData'); const weeklyData = document.getElementById('youtubeWeeklyData'); const insights = document.getElementById('youtubeActivityInsights'); const status = document.getElementById('youtubeActivityStatus');
+          if (view === 'live') { liveData.style.display = 'flex'; weeklyData.style.display = 'none'; insights.innerHTML = '<div class="insight-item"><span class="insight-label">Peak Time:</span><span class="insight-value">Wed-Fri 12-18h</span></div><div class="insight-item"><span class="insight-label">Optimal Upload:</span><span class="insight-value">Wednesday 15:00</span></div>'; status.textContent = 'Real-time audience engagement patterns • Updates every 15 minutes'; }
+          else { liveData.style.display = 'none'; weeklyData.style.display = 'flex'; insights.innerHTML = '<div class="insight-item"><span class="insight-label">Best Day:</span><span class="insight-value">Thursday</span></div><div class="insight-item"><span class="insight-label">Avg Peak:</span><span class="insight-value">Evening 18-24h</span></div>'; status.textContent = 'Weekly average data • Based on last 4 weeks of activity'; }
+        }
+        showNotification('📊 Switched to ' + view + ' view');
+      } catch (error) { console.error('Error switching activity view:', error); showNotification('❌ Error switching view', 'error'); }
+    }
+
+    function showNotification(message, type = 'success') {
+      try {
+        const notification = document.createElement('div'); const bgColor = type === 'error' ? 'rgba(239, 68, 68, 0.9)' : 'rgba(52, 211, 153, 0.9)';
+        notification.style.cssText = 'position: fixed; top: 30px; right: 30px; background: ' + bgColor + '; backdrop-filter: blur(20px); color: white; padding: 1.25rem 2rem; border-radius: 12px; z-index: 10000; animation: luxurySlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.1); font-weight: 500; font-family: \"Space Grotesk\", sans-serif; max-width: 320px; font-size: 0.9rem;';
+        notification.textContent = message;
+        if (!document.getElementById('notificationStyle')) {
+          const style = document.createElement('style'); style.id = 'notificationStyle'; style.textContent = '@keyframes luxurySlideIn { from { transform: translateX(100%) scale(0.8); opacity: 0;} to { transform: translateX(0) scale(1); opacity: 1;} } @keyframes luxurySlideOut { from { transform: translateX(0) scale(1); opacity: 1;} to { transform: translateX(100%) scale(0.8); opacity: 0;} }'; document.head.appendChild(style);
+        }
+        document.body.appendChild(notification);
+        setTimeout(() => { notification.style.animation = 'luxurySlideOut 0.4s cubic-bezier(0.4, 0, 0.2, 1)'; setTimeout(() => { if (notification.parentNode) notification.remove(); }, 400); }, 3500);
+      } catch (error) { console.error('Error showing notification:', error); }
+    }
+
+    function createParticles() {
+      try { const particlesContainer = document.getElementById('particles'); particlesContainer.innerHTML = ''; for (let i = 0; i < 25; i++) { const particle = document.createElement('div'); particle.className = 'particle'; particle.style.left = Math.random() * 100 + '%'; particle.style.animationDelay = Math.random() * 25 + 's'; particle.style.animationDuration = (20 + Math.random() * 15) + 's'; particlesContainer.appendChild(particle); } } catch (error) { console.error('Error creating particles:', error); }
+    }
+    function updateParticleColors() { try { document.querySelectorAll('.particle').forEach(p => { if (currentPlatform === 'youtube') p.classList.add('youtube'); else p.classList.remove('youtube'); }); } catch (error) { console.error('Error updating particle colors:', error); } }
+    function updateWaveActivity(platform, isActive = true) { try { const waves = document.querySelectorAll('.wave-line' + (platform === 'youtube' ? '.youtube' : ':not(.youtube)')); waves.forEach(w => { if (isActive) w.classList.add('active'); else w.classList.remove('active'); }); } catch (error) { console.error('Error updating wave activity:', error); } }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      try {
+        createParticles();
+        document.addEventListener('click', function(e) { const menuContainer = document.querySelector('.menu-container'); if (menuOpen && menuContainer && !menuContainer.contains(e.target)) toggleMenu(); });
+        document.addEventListener('click', function(e) { const modal = document.getElementById('scrapeModal'); if (e.target === modal) closeScrapeModal(); });
+        document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { const modal = document.getElementById('scrapeModal'); if (modal.classList.contains('show')) closeScrapeModal(); if (menuOpen) toggleMenu(); } });
+        document.querySelectorAll('.control-btn').forEach(btn => { btn.addEventListener('click', function() { this.parentNode.querySelectorAll('.control-btn').forEach(s => s.classList.remove('active')); this.classList.add('active'); showNotification('📊 Chart period changed to ' + this.textContent); }); });
+        document.querySelectorAll('.metric-card').forEach(card => { card.addEventListener('click', function() { const titleEl = this.querySelector('.metric-title'); const title = titleEl ? titleEl.textContent : 'Metric'; showNotification('📈 ' + title + ' details coming soon!'); }); });
+        document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && menuOpen) toggleMenu(); if (e.key === '1' && e.ctrlKey) { e.preventDefault(); switchPlatform('instagram'); } if (e.key === '2' && e.ctrlKey) { e.preventDefault(); switchPlatform('youtube'); } if (e.key === 'u' && e.ctrlKey) { e.preventDefault(); handleMenuClick('upload'); } });
+        showNotification('🎉 Luxury Dashboard loaded successfully!');
+      } catch (error) { console.error('Error initializing dashboard:', error); showNotification('❌ Error loading dashboard', 'error'); }
+    });
+
+    window.addEventListener('resize', function() { try { if (window.innerWidth <= 768 && menuOpen) toggleMenu(); } catch (error) { console.error('Error handling resize:', error); } });
+    document.addEventListener('contextmenu', function(e) { if (e.target.closest('.platform-btn') || e.target.closest('.menu-btn')) e.preventDefault(); });
+    document.querySelectorAll('.platform-btn, .menu-btn, .menu-item, .metric-card').forEach(el => { el.addEventListener('touchstart', function() { this.style.transform = (this.style.transform || '').replace('scale(1)', 'scale(0.98)') || 'scale(0.98)'; }); el.addEventListener('touchend', function() { this.style.transform = (this.style.transform || '').replace('scale(0.98)', 'scale(1)') || ''; }); });
+    setInterval(() => { try { if (Math.random() > 0.7) { updateWaveActivity(currentPlatform, true); const platforms = { instagram: '📷', youtube: '▶️' }; showNotification(platforms[currentPlatform] + ' Post activity detected!'); setTimeout(() => updateWaveActivity(currentPlatform, false), 3000); } } catch (error) { console.error('Error in activity simulation:', error); } }, 10000);
+    const keyboardStyle = document.createElement('style'); keyboardStyle.textContent = '.keyboard-navigation *:focus { outline: 2px solid #60a5fa !important; outline-offset: 2px !important; }'; document.head.appendChild(keyboardStyle);
+    document.addEventListener('keydown', function(e) { if (e.key === 'Tab') document.body.classList.add('keyboard-navigation'); });
+    document.addEventListener('mousedown', function() { document.body.classList.remove('keyboard-navigation'); });
+    window.addEventListener('error', function(e) { console.error('Dashboard error:', e.error); showNotification('⚠️ Dashboard error detected - functionality may be affected', 'error'); });
+    (function preloadAssets(){ try { const fontLink = document.createElement('link'); fontLink.rel = 'preload'; fontLink.href = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap'; fontLink.as = 'style'; document.head.appendChild(fontLink);} catch (error){ console.error('Error preloading assets:', error);} })();
+    console.log('🚀 Luxury Social Media Dashboard v2.0 - Fully Loaded');
+  </script>
+</body>
+</html>
