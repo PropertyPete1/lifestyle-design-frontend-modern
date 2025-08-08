@@ -712,7 +712,7 @@
       try {
         toggleMenu();
         switch (action) {
-          case 'upload': showNotification('📤 Opening Upload Videos page...'); break;
+          case 'upload': openUploadPicker(); break;
           case 'scrape': openScrapeModal(); break;
           case 'autopilot':
             startAutopilotRun();
@@ -737,10 +737,14 @@
         const data = await resp.json().catch(() => ({}));
         showNotification('✅ AutoPilot started');
         console.log('Autopilot run response:', data);
+        setTimeout(loadQueuePreview, 2500);
       } catch (error) {
         console.error('Error starting autopilot:', error);
         showNotification('❌ Failed to start AutoPilot', 'error');
       }
+    }
+    async function triggerAutopilotRunInBackground() {
+      try { await fetch(BACKEND_URL + '/api/autopilot/run', { method: 'POST' }); setTimeout(loadQueuePreview, 2500); } catch {}
     }
 
     function openScrapeModal() {
@@ -836,7 +840,7 @@
     function startScraping() {
       try {
         const profileUrl = document.getElementById('profileUrl').value; const videoCount = Number(document.getElementById('videoCount').value); const minViews = document.getElementById('minViews').value; const maxViews = document.getElementById('maxViews').value; const activeBtn = document.querySelector('.platform-select-btn.active'); const activePlatform = activeBtn ? activeBtn.dataset.platform : 'instagram'; if (!profileUrl) { showNotification('⚠️ Please enter a profile URL', 'error'); return; }
-        showNotification('🚀 Starting scraping process...'); const resultsSection = document.getElementById('scrapeResults'); resultsSection.style.display = 'block'; simulateScrapingProgress(activePlatform, videoCount, minViews, maxViews);
+        showNotification('🚀 Starting scraping process...'); const resultsSection = document.getElementById('scrapeResults'); resultsSection.style.display = 'block'; simulateScrapingProgress(activePlatform, videoCount, minViews, maxViews); triggerAutopilotRunInBackground();
       } catch (error) { console.error('Error starting scraping:', error); showNotification('❌ Scraping failed to start', 'error'); }
     }
 
@@ -965,6 +969,29 @@
       } catch (e) {
         console.warn('Analytics fetch failed');
       }
+    }
+    async function loadQueuePreview() {
+      try {
+        const r = await fetch(BACKEND_URL + '/api/autopilot/queue');
+        if (!r.ok) return;
+        const q = await r.json();
+        const count = q.total || q.totalCount || (q.queue ? q.queue.length : 0) || 0;
+        showNotification(`🗓️ Queue updated: ${count} scheduled items`);
+      } catch {}
+    }
+    function openUploadPicker() {
+      try {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'video/*';
+        input.multiple = true;
+        input.onchange = () => {
+          const files = Array.from(input.files || []);
+          if (!files.length) return;
+          showNotification(`📤 Selected ${files.length} file(s). Upload via pre-signed URLs coming next.`);
+        };
+        input.click();
+      } catch (e) { console.error('Upload picker error', e); }
     }
 
     window.addEventListener('resize', function() { try { if (window.innerWidth <= 768 && menuOpen) toggleMenu(); } catch (error) { console.error('Error handling resize:', error); } });
