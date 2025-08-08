@@ -571,6 +571,7 @@
 
   <script>
     let currentPlatform = 'instagram';
+    const BACKEND_URL = 'https://lifestyle-design-backend-v2-clean.onrender.com';
     let menuOpen = false;
 
     function switchPlatform(platform) {
@@ -595,14 +596,26 @@
       } catch (error) { console.error('Error toggling menu:', error); }
     }
 
-    function handlePostNow() {
+    async function handlePostNow() {
       try {
         const platform = currentPlatform.charAt(0).toUpperCase() + currentPlatform.slice(1);
         showNotification('⚡️ Creating ' + platform + ' post...');
-        setTimeout(() => { showNotification('🚀 ' + platform + ' post published successfully!'); updateWaveActivity(currentPlatform, true); setTimeout(() => updateWaveActivity(currentPlatform, false), 4000); }, 1500);
         const postBtn = document.querySelector('.post-now-btn');
         if (postBtn) { postBtn.style.transform = 'scale(0.95)'; setTimeout(() => { postBtn.style.transform = ''; }, 150); }
-      } catch (error) { console.error('Error in post now:', error); showNotification('❌ Failed to create post', 'error'); }
+        const resp = await fetch(BACKEND_URL + '/api/autopilot/manual-post', { method: 'POST' });
+        if (!resp.ok) {
+          const txt = await resp.text().catch(() => '');
+          throw new Error('Post Now failed: ' + (txt || resp.status));
+        }
+        const data = await resp.json().catch(() => ({}));
+        showNotification('🚀 Post published successfully!');
+        updateWaveActivity(currentPlatform, true);
+        setTimeout(() => updateWaveActivity(currentPlatform, false), 4000);
+        console.log('Post Now response:', data);
+      } catch (error) {
+        console.error('Error in post now:', error);
+        showNotification('❌ Failed to create post', 'error');
+      }
     }
 
     function handleMenuClick(action) {
@@ -611,13 +624,31 @@
         switch (action) {
           case 'upload': showNotification('📤 Opening Upload Videos page...'); break;
           case 'scrape': openScrapeModal(); break;
-          case 'autopilot': showNotification('🚀 AutoPilot feature activated!'); break;
+          case 'autopilot':
+            startAutopilotRun();
+            break;
           case 'manual': showNotification('✍ Manual Post editor opening...'); break;
           case 'cartoons': showNotification('🎬 Cartoon generator loading...'); break;
           case 'settings': showNotification('⚙ Settings panel opening...'); break;
           default: showNotification('🔧 Feature coming soon!');
         }
       } catch (error) { console.error('Error handling menu click:', error); }
+    }
+    async function startAutopilotRun() {
+      try {
+        showNotification('🚀 Starting AutoPilot...');
+        const resp = await fetch(BACKEND_URL + '/api/autopilot/run', { method: 'POST' });
+        if (!resp.ok) {
+          const txt = await resp.text().catch(() => '');
+          throw new Error('Autopilot failed: ' + (txt || resp.status));
+        }
+        const data = await resp.json().catch(() => ({}));
+        showNotification('✅ AutoPilot started');
+        console.log('Autopilot run response:', data);
+      } catch (error) {
+        console.error('Error starting autopilot:', error);
+        showNotification('❌ Failed to start AutoPilot', 'error');
+      }
     }
 
     function openScrapeModal() {
@@ -715,6 +746,25 @@
         document.querySelectorAll('.control-btn').forEach(btn => { btn.addEventListener('click', function() { this.parentNode.querySelectorAll('.control-btn').forEach(s => s.classList.remove('active')); this.classList.add('active'); showNotification('📊 Chart period changed to ' + this.textContent); }); });
         document.querySelectorAll('.metric-card').forEach(card => { card.addEventListener('click', function() { const titleEl = this.querySelector('.metric-title'); const title = titleEl ? titleEl.textContent : 'Metric'; showNotification('📈 ' + title + ' details coming soon!'); }); });
         document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && menuOpen) toggleMenu(); if (e.key === '1' && e.ctrlKey) { e.preventDefault(); switchPlatform('instagram'); } if (e.key === '2' && e.ctrlKey) { e.preventDefault(); switchPlatform('youtube'); } if (e.key === 'u' && e.ctrlKey) { e.preventDefault(); handleMenuClick('upload'); } });
+        // Initial backend status fetch
+        try {
+          const statusResp = await fetch(BACKEND_URL + '/api/autopilot/status');
+          if (statusResp.ok) {
+            const status = await statusResp.json();
+            const statusEls = document.querySelectorAll('.auto-post-status');
+            statusEls.forEach(el => {
+              if (status.autopilotEnabled) {
+                el.classList.remove('inactive');
+                el.innerHTML = '<div class="status-indicator"></div>Active';
+              } else {
+                el.classList.add('inactive');
+                el.innerHTML = '<div class="status-indicator"></div>Inactive';
+              }
+            });
+          }
+        } catch (e) {
+          console.warn('Failed to fetch autopilot status');
+        }
         showNotification('🎉 Luxury Dashboard loaded successfully!');
       } catch (error) { console.error('Error initializing dashboard:', error); showNotification('❌ Error loading dashboard', 'error'); }
     });
