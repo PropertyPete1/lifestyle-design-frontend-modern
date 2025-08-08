@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Social Media Analytics Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -569,9 +571,9 @@
     </div>
   </div>
 
-  <script>
+  <script type="module">
     let currentPlatform = 'instagram';
-    const BACKEND_URL = 'https://lifestyle-design-backend-v2-clean.onrender.com';
+    const BACKEND_URL = (typeof import !== 'undefined' && typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL) || 'https://lifestyle-design-backend-v2-clean.onrender.com';
     let menuOpen = false;
 
     function switchPlatform(platform) {

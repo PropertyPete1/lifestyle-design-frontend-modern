@@ -1,11 +1,11 @@
-Lifestyle Design Social - Modern Frontend (Static)
+Lifestyle Design Social - Modern Frontend (Vite Static)
 
 How to run locally
-- Open index.html in a browser (no build step required)
+- npm install
+- npm run dev
 
-What this is
-- A static, modern dashboard UI you provided, packaged as a clean HTML file.
-- Can be used as reference for styling or hosted as a static site.
+Env vars
+- Create `.env` and set `VITE_BACKEND_URL=https://lifestyle-design-backend-v2-clean.onrender.com`
 
-Next steps (optional)
-- Convert into a Next.js app and wire to existing APIs in `PropertyPete1/lifestyle-design-frontend-clean` when ready.
+Build
+- npm run build (outputs to `dist/`)
